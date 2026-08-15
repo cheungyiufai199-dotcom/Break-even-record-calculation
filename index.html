@@ -12,7 +12,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <style>
-        /* 同你之前一樣，冇改動 */
         * { margin:0; padding:0; box-sizing:border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
         body { background:#f5f7fb; padding:12px 10px 40px; display:flex; justify-content:center; min-height:100vh; }
         .app { max-width:500px; width:100%; }
@@ -115,7 +114,7 @@
         <div class="card">
             <div class="month-selector">
                 <button id="prevMonthBtn">◀</button>
-                <span class="month-label" id="currentMonthLabel">2026年8月</span>
+                <span class="month-label" id="currentMonthLabel">...</span>
                 <button id="nextMonthBtn">▶</button>
             </div>
             <div class="stats-grid">
@@ -285,7 +284,7 @@
 
 <script>
 // ============================================================
-//  大輝記賬 · 匿名登入版 (修正錯誤處理)
+//  大輝記賬 · 匿名登入版 (修正硬编码年月 + 強化錯誤提示)
 // ============================================================
 (function() {
     'use strict';
@@ -308,7 +307,10 @@
     let currentUser = null;
     let dbRef = null, trashRef = null;
     let allEntries = [], trashEntries = [];
-    let currentYear = 2026, currentMonth = 8;
+    // 修正：自動偵測而家年月
+    const nowDate = new Date();
+    let currentYear = nowDate.getFullYear();
+    let currentMonth = nowDate.getMonth() + 1;
     let currencySymbol = '$';
     let chartPie = null, chartLine = null;
     let searchResults = [];
@@ -702,7 +704,7 @@
         // ---------- 自動匿名登入 ----------
         auth.signInAnonymously().catch(err => {
             console.error('匿名登入失敗:', err);
-            alert('匿名登入失敗：' + err.message + '\n請確認 Firebase 已啟用匿名登入。');
+            alert('❌ 匿名登入失敗：' + err.message + '\n\n請確認你已經喺 Firebase Console 啟用「匿名登入」功能。');
         });
 
         auth.onAuthStateChanged(user => {
