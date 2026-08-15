@@ -1,0 +1,413 @@
+收支計算紀錄
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>大辉记账 · 云端版</title>
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <style>
+        /* 同之前一样嘅样式，加多啲登录栏 */
+        * { margin:0; padding:0; box-sizing:border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+        body { background:#f5f7fb; padding:16px 12px 40px; display:flex; justify-content:center; }
+        .app { max-width:480px; width:100%; }
+        .card { background:#fff; border-radius:24px; padding:20px 18px; margin-bottom:18px; box-shadow:0 4px 14px rgba(0,0,0,0.04); }
+        .card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+        .card-header h2 { font-size:18px; font-weight:600; color:#1e293b; }
+        .card-header .badge { background:#eef2ff; color:#4f46e5; font-size:13px; font-weight:500; padding:4px 12px; border-radius:30px; }
+        .form-row { display:flex; flex-wrap:wrap; gap:10px 8px; margin-bottom:12px; }
+        .form-row .field { flex:1 0 calc(50% - 8px); min-width:120px; }
+        .form-row .field.full { flex:1 0 100%; }
+        label { display:block; font-size:13px; font-weight:500; color:#475569; margin-bottom:4px; }
+        input, select, button { width:100%; padding:12px 14px; border-radius:16px; border:1px solid #e2e8f0; background:#fafcff; font-size:15px; color:#0f172a; outline:none; transition:0.2s; }
+        input:focus, select:focus { border-color:#818cf8; box-shadow:0 0 0 3px rgba(99,102,241,0.15); background:#fff; }
+        .btn-group { display:flex; gap:10px; margin-top:6px; }
+        .btn { border:none; font-weight:600; cursor:pointer; background:#f1f5f9; color:#1e293b; padding:12px 10px; flex:1; border-radius:40px; font-size:15px; transition:0.2s; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+        .btn-primary { background:#4f46e5; color:white; box-shadow:0 4px 10px rgba(79,70,229,0.25); }
+        .btn-primary:active { transform:scale(0.97); background:#4338ca; }
+        .btn-danger { background:#fee2e2; color:#b91c1c; }
+        .btn-danger:active { background:#fecaca; }
+        .btn-outline { background:transparent; border:1px solid #e2e8f0; }
+        .btn-google { background:#fff; border:1px solid #dadce0; color:#1a1a1a; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+        .btn-google:active { background:#f8f9fa; }
+        .stats-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center; }
+        .stat-item { background:#f8fafc; border-radius:18px; padding:12px 4px; }
+        .stat-item .num { font-size:22px; font-weight:700; }
+        .stat-item .label { font-size:12px; color:#64748b; margin-top:2px; }
+        .income-num { color:#0b8a5e; }
+        .expense-num { color:#b91c1c; }
+        .balance-num { color:#1e293b; }
+        .entry-list { list-style:none; margin-top:4px; max-height:380px; overflow-y:auto; }
+        .entry-list li { display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-bottom:1px solid #f1f5f9; }
+        .entry-list li:last-child { border-bottom:none; }
+        .entry-info { display:flex; flex-direction:column; gap:2px; }
+        .entry-cat { font-weight:500; color:#0f172a; }
+        .entry-meta { font-size:13px; color:#94a3b8; display:flex; align-items:center; gap:10px; }
+        .entry-meta .tag { background:#eef2ff; color:#4f46e5; padding:0 10px; border-radius:30px; font-size:11px; font-weight:500; }
+        .entry-amount { font-weight:600; font-size:16px; }
+        .entry-amount.income { color:#0b8a5e; }
+        .entry-amount.expense { color:#b91c1c; }
+        .del-btn { background:none; border:none; font-size:18px; color:#cbd5e1; cursor:pointer; padding:4px 8px; border-radius:30px; transition:0.15s; }
+        .del-btn:active { background:#fee2e2; color:#b91c1c; }
+        .empty-state { text-align:center; color:#94a3b8; padding:28px 0 14px; font-size:15px; }
+        .month-selector { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+        .month-selector button { width:auto; padding:6px 14px; background:#f1f5f9; border:none; border-radius:40px; font-size:18px; font-weight:500; cursor:pointer; }
+        .month-selector .month-label { font-weight:600; font-size:17px; color:#0f172a; flex:1; text-align:center; }
+        .footer-tip { text-align:center; color:#94a3b8; font-size:13px; margin-top:12px; }
+        /* 登录栏 */
+        .auth-bar { display:flex; align-items:center; gap:12px; background:#fff; border-radius:40px; padding:10px 16px; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04); }
+        .auth-bar .user-info { flex:1; font-size:14px; color:#1e293b; }
+        .auth-bar .user-info span { font-weight:500; }
+        .auth-bar .btn { width:auto; padding:6px 18px; flex:0; }
+        .disabled-overlay { position:relative; }
+        .disabled-overlay::after { content:''; position:absolute; inset:0; background:rgba(255,255,255,0.6); border-radius:24px; pointer-events:none; }
+        @media (max-width:420px) { .stats-grid { grid-template-columns:1fr 1fr 1fr; gap:4px; } .stat-item .num { font-size:18px; } .form-row .field { flex:1 0 100%; } }
+    </style>
+</head>
+<body>
+<div class="app" id="app">
+    <!-- 标题 + 登录状态 -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span style="font-size:26px; font-weight:700; color:#0f172a;">📒 大辉记账</span>
+        <span style="font-size:14px; color:#94a3b8;">云端版</span>
+    </div>
+
+    <!-- 登录栏 -->
+    <div class="auth-bar" id="authBar">
+        <div class="user-info" id="userInfo">⏳ 连接中...</div>
+        <button class="btn btn-google" id="authBtn">登入 Google</button>
+    </div>
+
+    <!-- 新增记录 (默认加遮罩) -->
+    <div class="card disabled-overlay" id="addCard">
+        <div class="card-header"><h2>✏️ 记一笔</h2><span class="badge">今日</span></div>
+        <div class="form-row">
+            <div class="field">
+                <label>类型</label>
+                <select id="typeSelect">
+                    <option value="expense">支出</option>
+                    <option value="income">收入</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>类别</label>
+                <input type="text" id="categoryInput" placeholder="例如: 午餐" value="午餐">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="field">
+                <label>金额 (HK$)</label>
+                <input type="number" id="amountInput" placeholder="0.00" step="0.01" value="38.5">
+            </div>
+            <div class="field">
+                <label>日期</label>
+                <input type="date" id="dateInput">
+            </div>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-primary" id="addBtn">➕ 加记录</button>
+            <button class="btn btn-outline" id="clearFormBtn">清空</button>
+        </div>
+    </div>
+
+    <!-- 统计 -->
+    <div class="card">
+        <div class="month-selector">
+            <button id="prevMonthBtn">◀</button>
+            <span class="month-label" id="currentMonthLabel">2026年8月</span>
+            <button id="nextMonthBtn">▶</button>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-item"><div class="num income-num" id="totalIncome">0</div><div class="label">收入</div></div>
+            <div class="stat-item"><div class="num expense-num" id="totalExpense">0</div><div class="label">支出</div></div>
+            <div class="stat-item"><div class="num balance-num" id="totalBalance">0</div><div class="label">结余</div></div>
+        </div>
+    </div>
+
+    <!-- 记录列表 -->
+    <div class="card">
+        <div class="card-header">
+            <h2>📋 明细</h2>
+            <span class="badge" id="entryCount">0 笔</span>
+        </div>
+        <ul class="entry-list" id="entryList">
+            <li class="empty-state">📭 冇记录，加一笔啦！</li>
+        </ul>
+        <div style="margin-top:10px; text-align:right;">
+            <button class="btn btn-danger" id="clearAllBtn" style="width:auto; padding:6px 20px; font-size:13px;">🗑 清空所有</button>
+        </div>
+    </div>
+
+    <div class="footer-tip">☁️ 数据自动同步 · 登录后多设备共享</div>
+</div>
+
+<script>
+(function() {
+    // ---------- Firebase 设定 ----------
+    const firebaseConfig = {
+        apiKey: "AIzaSyBFfgFYyh1AGvpBYHdRUtHsnBz6pawPZOI",
+        authDomain: "break-even-record-calculation.firebaseapp.com",
+        databaseURL: "https://break-even-record-calculation-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "break-even-record-calculation",
+        storageBucket: "break-even-record-calculation.firebasestorage.app",
+        messagingSenderId: "963032266930",
+        appId: "1:963032266930:web:23f60bb6409e55f1e371ab",
+        measurementId: "G-0RH7CCVNB6"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const database = firebase.database();
+
+    // 启用离线持久化 (可选)
+    database.goOnline();
+
+    // ---------- DOM 引用 ----------
+    const typeSelect = document.getElementById('typeSelect');
+    const categoryInput = document.getElementById('categoryInput');
+    const amountInput = document.getElementById('amountInput');
+    const dateInput = document.getElementById('dateInput');
+    const addBtn = document.getElementById('addBtn');
+    const clearFormBtn = document.getElementById('clearFormBtn');
+    const entryList = document.getElementById('entryList');
+    const entryCount = document.getElementById('entryCount');
+    const totalIncome = document.getElementById('totalIncome');
+    const totalExpense = document.getElementById('totalExpense');
+    const totalBalance = document.getElementById('totalBalance');
+    const currentMonthLabel = document.getElementById('currentMonthLabel');
+    const prevMonthBtn = document.getElementById('prevMonthBtn');
+    const nextMonthBtn = document.getElementById('nextMonthBtn');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+    const authBtn = document.getElementById('authBtn');
+    const userInfo = document.getElementById('userInfo');
+    const addCard = document.getElementById('addCard');
+
+    // ---------- 状态 ----------
+    let currentYear = 2026, currentMonth = 8;
+    let entries = [];           // 当前月份嘅记录 (从DB过滤)
+    let allEntries = [];       // 所有记录 (从DB取得)
+    let dbRef = null;          // 当前用户嘅 database reference
+    let currentUser = null;
+
+    // ---------- 辅助函数 ----------
+    function todayStr() {
+        const d = new Date();
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+    function formatDate(dateStr) {
+        const parts = dateStr.split('-');
+        return parts[1] + '/' + parts[2];
+    }
+    function generateId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+    // ---------- 渲染 (基于 allEntries 同 currentMonth) ----------
+    function render() {
+        // 过滤当月
+        const prefix = currentYear + '-' + String(currentMonth).padStart(2,'0');
+        const monthEntries = allEntries.filter(e => e.date.startsWith(prefix));
+        entries = monthEntries; // 更新
+
+        // 统计
+        let inc=0, exp=0;
+        monthEntries.forEach(e => {
+            if (e.type === 'income') inc += e.amount;
+            else exp += e.amount;
+        });
+        totalIncome.textContent = '$' + inc.toFixed(1);
+        totalExpense.textContent = '$' + exp.toFixed(1);
+        totalBalance.textContent = '$' + (inc - exp).toFixed(1);
+        currentMonthLabel.textContent = currentYear + '年' + currentMonth + '月';
+
+        // 列表
+        if (monthEntries.length === 0) {
+            entryList.innerHTML = '<li class="empty-state">📭 呢个月冇记录，加一笔啦！</li>';
+            entryCount.textContent = '0 笔';
+            return;
+        }
+        const sorted = [...monthEntries].sort((a,b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+        let html = '';
+        sorted.forEach(e => {
+            const cls = e.type === 'income' ? 'income' : 'expense';
+            const sign = e.type === 'income' ? '+' : '-';
+            const cat = e.category || (e.type === 'income' ? '收入' : '支出');
+            html += `<li>
+                <div class="entry-info">
+                    <span class="entry-cat">${cat}</span>
+                    <span class="entry-meta">
+                        <span>${formatDate(e.date)}</span>
+                        <span class="tag">${e.type === 'income' ? '收入' : '支出'}</span>
+                    </span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="entry-amount ${cls}">${sign}$${e.amount.toFixed(1)}</span>
+                    <button class="del-btn" data-id="${e.id}">✕</button>
+                </div>
+            </li>`;
+        });
+        entryList.innerHTML = html;
+        entryCount.textContent = monthEntries.length + ' 笔';
+
+        // 绑定删除 (用事件代理更好，但保留原有方式)
+        document.querySelectorAll('.del-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const id = this.dataset.id;
+                if (confirm('确定要删除呢条记录？')) {
+                    if (dbRef && currentUser) {
+                        // 根据id找对应firebase key (因为id系自定义，但实际存储key系push生成，我们需用id查)
+                        // 由于我们存储时用id作为key，所以直接用id
+                        dbRef.child(id).remove().catch(err => alert('删除失败: ' + err.message));
+                    } else {
+                        alert('请先登入');
+                    }
+                }
+            });
+        });
+    }
+
+    // ---------- 从 Firebase 加载数据 ----------
+    function attachDatabaseListener(user) {
+        if (dbRef) {
+            dbRef.off(); // 解除旧监听
+        }
+        dbRef = database.ref('users/' + user.uid + '/entries');
+        // 监听数据变化
+        dbRef.on('value', snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                // 将对象转换成数组，每个key作为id
+                const arr = Object.keys(data).map(key => {
+                    return { ...data[key], id: key };
+                });
+                allEntries = arr;
+            } else {
+                allEntries = [];
+            }
+            render();
+        }, error => {
+            console.error('读取数据出错:', error);
+            alert('同步数据出错，请检查网络');
+        });
+    }
+
+    // ---------- 新增记录 ----------
+    function addEntry() {
+        if (!currentUser) { alert('请先登入 Google 账号'); return; }
+        const type = typeSelect.value;
+        const category = categoryInput.value.trim() || (type === 'income' ? '收入' : '支出');
+        const amount = parseFloat(amountInput.value);
+        let date = dateInput.value;
+        if (!date) { date = todayStr(); dateInput.value = date; }
+        if (isNaN(amount) || amount <= 0) { alert('请输入有效金额 (大过0)'); amountInput.focus(); return; }
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { alert('日期格式唔啱'); dateInput.focus(); return; }
+
+        // 生成唯一id (用作firebase key)
+        const id = generateId();
+        const newEntry = { type, category, amount, date };
+        // 使用id作为key存储
+        dbRef.child(id).set(newEntry).then(() => {
+            // 成功后自动同步
+            amountInput.value = '';
+            categoryInput.value = '';
+            dateInput.value = todayStr();
+            amountInput.focus();
+        }).catch(err => alert('储存失败: ' + err.message));
+    }
+
+    // ---------- 清空所有 ----------
+    function clearAll() {
+        if (!currentUser) { alert('请先登入'); return; }
+        if (allEntries.length === 0) return;
+        if (confirm('⚠️ 确定要删除「所有」记录？呢个操作冇得返转头！')) {
+            dbRef.remove().catch(err => alert('删除失败: ' + err.message));
+        }
+    }
+
+    // ---------- 登录/登出 ----------
+    function updateAuthUI(user) {
+        if (user) {
+            currentUser = user;
+            userInfo.innerHTML = `👤 <span>${user.displayName || user.email || '用户'}</span>`;
+            authBtn.textContent = '登出';
+            addCard.classList.remove('disabled-overlay');
+            // 附加监听
+            attachDatabaseListener(user);
+        } else {
+            currentUser = null;
+            userInfo.innerHTML = '🚫 未登入';
+            authBtn.textContent = '登入 Google';
+            addCard.classList.add('disabled-overlay');
+            if (dbRef) {
+                dbRef.off();
+                dbRef = null;
+            }
+            allEntries = [];
+            entries = [];
+            render();
+        }
+    }
+
+    auth.onAuthStateChanged(user => {
+        updateAuthUI(user);
+    });
+
+    authBtn.addEventListener('click', function() {
+        if (currentUser) {
+            // 登出
+            auth.signOut().catch(err => alert('登出失败: ' + err.message));
+        } else {
+            // 登入 - Google
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider).catch(err => {
+                alert('登入失败: ' + err.message);
+            });
+        }
+    });
+
+    // ---------- 其他事件绑定 ----------
+    addBtn.addEventListener('click', addEntry);
+    clearFormBtn.addEventListener('click', function() {
+        amountInput.value = '';
+        categoryInput.value = '';
+        dateInput.value = todayStr();
+        typeSelect.value = 'expense';
+        amountInput.focus();
+    });
+    prevMonthBtn.addEventListener('click', function() { 
+        let m = currentMonth - 1, y = currentYear;
+        if (m < 1) { m = 12; y--; }
+        currentYear = y; currentMonth = m; render();
+    });
+    nextMonthBtn.addEventListener('click', function() {
+        let m = currentMonth + 1, y = currentYear;
+        if (m > 12) { m = 1; y++; }
+        currentYear = y; currentMonth = m; render();
+    });
+    clearAllBtn.addEventListener('click', clearAll);
+
+    // 回车快速加
+    [amountInput, categoryInput, dateInput].forEach(input => {
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); addEntry(); }
+        });
+    });
+
+    // 初始化日期
+    dateInput.value = todayStr();
+
+    // 当未有用户时，显示遮罩
+    if (!auth.currentUser) {
+        addCard.classList.add('disabled-overlay');
+    } else {
+        addCard.classList.remove('disabled-overlay');
+    }
+
+    // 首次渲染 (加载前显示空)
+    render();
+
+})();
+</script>
+</body>
+</html>
