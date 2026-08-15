@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>大輝記賬 - 收支損益管理系統</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-16">
+  <div class="max-w-md mx-auto p-4 space-y-4">
+
+    <!-- 頂部標題與連線狀態 -->
+    <header class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/60 flex justify-between items-center">
+      <div>
+        <h1 class="text-lg font-bold text-slate-900">收支損益計算器</h1>
+        <p class="text-xs text-slate-500">雲端實時記賬系統</p>
+      </div>
+      <div id="connectionStatus" class="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full font-medium">
+        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> 連線中...
+      </div>
+    </header>
+
+    <!-- 月份選擇、匯出按鈕與財務看板 -->
+    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/60 space-y-3">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">月份結算</span>
+        <div class="flex items-center gap-2">
+          <input type="month" id="selectedMonth" class="px-2.5 py-1 bg-slate-100 text-slate-700 text-xs rounded-lg font-semibold border-0 focus:ring-2 focus:ring-blue-500 cursor-pointer" />
+          <button type="button" id="btnExportCSV" class="flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition shadow-sm active:scale-95">
+            <span>📥 匯出 CSV</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 pt-1">
+        <div class="bg-emerald-50/80 border border-emerald-100 p-2.5 rounded-xl text-center">
+          <div class="text-[11px] text-emerald-600 font-medium">當月收入</div>
+          <div id="totalIncome" class="text-base font-bold text-emerald-700 mt-0.5">$0</div>
+        </div>
+        <div class="bg-rose-50/80 border border-rose-100 p-2.5 rounded-xl text-center">
+          <div class="text-[11px] text-rose-600 font-medium">當月支出</div>
+          <div id="totalExpense" class="text-base font-bold text-rose-700 mt-0.5">$0</div>
+        </div>
+        <div class="bg-blue-50/80 border border-blue-100 p-2.5 rounded-xl text-center">
+          <div class="text-[11px] text-blue-600 font-medium">當月結餘</div>
+          <div id="netBalance" class="text-base font-bold text-blue-700 mt-0.5">$0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 記賬表單 -->
+    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/60 space-y-4">
+      
+      <!-- 收支切換 -->
+      <div class="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-xl">
+        <button type="button" id="btnExpense" class="py-2 text-xs font-bold rounded-lg bg-white text-rose-600 shadow-sm transition">支出</button>
+        <button type="button" id="btnIncome" class="py-2 text-xs font-bold rounded-lg text-slate-600 transition">收入</button>
+      </div>
+
+      <form id="recordForm" class="space-y-3.5">
+        <!-- 金額輸入 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">金額 (HK$)</label>
+          <div class="relative">
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+            <input type="number" step="0.5" id="amount" placeholder="0.00" required class="w-full pl-8 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base font-bold text-slate-800" />
+          </div>
+        </div>
+
+        <!-- 膠囊分類選擇 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5">選擇分類</label>
+          <div id="categoryContainer" class="grid grid-cols-3 gap-1.5"></div>
+        </div>
+
+        <!-- 日期選擇與快捷過去日子 -->
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="text-xs font-semibold text-slate-600">日期</label>
+            <div class="flex gap-1">
+              <button type="button" class="quick-date text-[11px] px-2 py-0.5 rounded-md bg-slate-100 hover:bg-blue-100 hover:text-blue-700 text-slate-600 font-medium transition" data-offset="0">今日</button>
+              <button type="button" class="quick-date text-[11px] px-2 py-0.5 rounded-md bg-slate-100 hover:bg-blue-100 hover:text-blue-700 text-slate-600 font-medium transition" data-offset="1">琴日</button>
+              <button type="button" class="quick-date text-[11px] px-2 py-0.5 rounded-md bg-slate-100 hover:bg-blue-100 hover:text-blue-700 text-slate-600 font-medium transition" data-offset="2">前日</button>
+            </div>
+          </div>
+          <input type="date" id="recordDate" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs font-medium" />
+        </div>
+
+        <!-- 備註說明 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">備註說明 (選填)</label>
+          <input type="text" id="description" placeholder="例: 茶餐廳午餐 / 買日常用品" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs" />
+        </div>
+
+        <!-- 提交按鈕 -->
+        <button type="submit" id="submitBtn" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-sm transition shadow-sm active:scale-[0.99]">
+          儲存記錄
+        </button>
+      </form>
+    </div>
+
+    <!-- 歷史流水清單 -->
+    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/60 space-y-3">
+      <div class="flex justify-between items-center">
+        <h2 class="text-xs font-bold text-slate-600 uppercase tracking-wider">流水明細</h2>
+        <span id="recordCount" class="text-xs text-slate-400 font-medium">0 筆</span>
+      </div>
+      <div id="recordList" class="space-y-2 max-h-80 overflow-y-auto pr-0.5">
+        <div class="text-center py-8 text-xs text-slate-400">載入中...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Firebase Modular SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    // 你的 Firebase 設定
+    const firebaseConfig = {
+      apiKey: "AIzaSyBFfgFYyh1AGvpBYHdRUtHsnBz6pawPZOI",
+      authDomain: "break-even-record-calculation.firebaseapp.com",
+      databaseURL: "https://break-even-record-calculation-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "break-even-record-calculation",
+      storageBucket: "break-even-record-calculation.firebasestorage.app",
+      messagingSenderId: "963032266930",
+      appId: "1:963032266930:web:23f60bb6409e55f1e371ab",
+      measurementId: "G-0RH7CCVNB6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const recordsRef = ref(db, "expenses_records");
+
+    // 分類定義
+    const categoryPresets = {
+      expense: [
+        "🍜 食飯飲食", "🚇 搭車交通", "🛒 街市買餸",
+        "🏠 屋企雜項", "💡 水電煤費", "🛍️ 娛樂購物",
+        "📱 電話上網", "📦 其他支出"
+      ],
+      income: [
+        "💼 本職薪金", "📈 兼職副業", "🧧 利是禮金",
+        "🪙 投資回報", "💵 其他收入"
+      ]
+    };
+
+    let currentType = "expense";
+    let selectedCategory = categoryPresets.expense[0];
+    let rawRecords = [];
+
+    // DOM 元素
+    const btnExpense = document.getElementById("btnExpense");
+    const btnIncome = document.getElementById("btnIncome");
+    const categoryContainer = document.getElementById("categoryContainer");
+    const dateInput = document.getElementById("recordDate");
+    const monthInput = document.getElementById("selectedMonth");
+    const btnExportCSV = document.getElementById("btnExportCSV");
+
+    // 渲染分類膠囊掣
+    function renderCategoryButtons() {
+      categoryContainer.innerHTML = "";
+      const categories = categoryPresets[currentType];
+      if (!categories.includes(selectedCategory)) {
+        selectedCategory = categories[0];
+      }
+
+      categories.forEach((cat) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        const isSelected = cat === selectedCategory;
+        btn.className = `py-2 px-1 text-xs rounded-xl font-medium transition border text-center truncate ${
+          isSelected
+            ? (currentType === "expense" ? "bg-rose-50 border-rose-300 text-rose-700 font-bold" : "bg-emerald-50 border-emerald-300 text-emerald-700 font-bold")
+            : "bg-slate-50 border-slate-200/80 text-slate-600 hover:bg-slate-100"
+        }`;
+        btn.textContent = cat;
+        btn.addEventListener("click", () => {
+          selectedCategory = cat;
+          renderCategoryButtons();
+        });
+        categoryContainer.appendChild(btn);
+      });
+    }
+
+    // 日期工具
+    function getDateString(offset = 0) {
+      const d = new Date();
+      d.setDate(d.getDate() - offset);
+      return d.toISOString().split("T")[0];
+    }
+
+    dateInput.value = getDateString(0);
+    monthInput.value = getDateString(0).substring(0, 7);
+
+    // 快捷日期按鈕
+    document.querySelectorAll(".quick-date").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const offset = parseInt(btn.getAttribute("data-offset"), 10);
+        dateInput.value = getDateString(offset);
+      });
+    });
+
+    // 收支切換
+    btnExpense.addEventListener("click", () => {
+      currentType = "expense";
+      btnExpense.className = "py-2 text-xs font-bold rounded-lg bg-white text-rose-600 shadow-sm transition";
+      btnIncome.className = "py-2 text-xs font-bold rounded-lg text-slate-600 transition";
+      renderCategoryButtons();
+    });
+
+    btnIncome.addEventListener("click", () => {
+      currentType = "income";
+      btnIncome.className = "py-2 text-xs font-bold rounded-lg bg-white text-emerald-600 shadow-sm transition";
+      btnExpense.className = "py-2 text-xs font-bold rounded-lg text-slate-600 transition";
+      renderCategoryButtons();
+    });
+
+    // 渲染明細清單與看板
+    function renderRecords() {
+      const selectedMonth = monthInput.value;
+      const listEl = document.getElementById("recordList");
+      listEl.innerHTML = "";
+
+      let totalInc = 0;
+      let totalExp = 0;
+
+      const filtered = rawRecords.filter((item) => item.date && item.date.startsWith(selectedMonth));
+
+      filtered.forEach((val) => {
+        const amt = parseFloat(val.amount) || 0;
+        if (val.type === "income") totalInc += amt;
+        else totalExp += amt;
+      });
+
+      document.getElementById("totalIncome").textContent = `$${totalInc.toLocaleString("en-US", { minimumFractionDigits: 1 })}`;
+      document.getElementById("totalExpense").textContent = `$${totalExp.toLocaleString("en-US", { minimumFractionDigits: 1 })}`;
+      const net = totalInc - totalExp;
+      const netEl = document.getElementById("netBalance");
+      netEl.textContent = `$${net.toLocaleString("en-US", { minimumFractionDigits: 1 })}`;
+      netEl.className = `text-base font-bold mt-0.5 ${net >= 0 ? "text-blue-700" : "text-rose-700"}`;
+      document.getElementById("recordCount").textContent = `${filtered.length} 筆 (${selectedMonth})`;
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = `<div class="text-center py-8 text-xs text-slate-400">${selectedMonth} 暫無記錄</div>`;
+        return;
+      }
+
+      filtered.sort((a, b) => new Date(b.date) - new Date(a.date) || b.createdAt - a.createdAt);
+
+      filtered.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between p-2.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200/50 transition";
+        const isExp = item.type === "expense";
+        
+        row.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <div class="text-base">${item.category ? item.category.split(" ")[0] : "📦"}</div>
+            <div>
+              <div class="text-xs font-semibold text-slate-800">${item.description || (item.category ? item.category.split(" ")[1] : "未分類")}</div>
+              <div class="text-[10px] text-slate-400 font-medium">${item.date} · ${item.category || ""}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold ${isExp ? 'text-rose-600' : 'text-emerald-600'}">
+              ${isExp ? '-' : '+'}$${parseFloat(item.amount).toLocaleString('en-US', { minimumFractionDigits: 1 })}
+            </span>
+            <button data-id="${item.id}" class="btn-delete text-slate-300 hover:text-rose-500 text-xs px-1.5 py-0.5 rounded transition">✕</button>
+          </div>
+        `;
+        listEl.appendChild(row);
+      });
+
+      document.querySelectorAll(".btn-delete").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const id = e.target.getAttribute("data-id");
+          if (confirm("確定刪除呢筆記錄？")) {
+            remove(ref(db, `expenses_records/${id}`));
+          }
+        });
+      });
+    }
+
+    monthInput.addEventListener("change", renderRecords);
+
+    // 匯出 CSV 邏輯 (支援 UTF-8 BOM 避免 Excel 亂碼)
+    btnExportCSV.addEventListener("click", () => {
+      const selectedMonth = monthInput.value;
+      const filtered = rawRecords.filter((item) => item.date && item.date.startsWith(selectedMonth));
+
+      if (filtered.length === 0) {
+        alert(`${selectedMonth} 暫無任何記錄可供匯出！`);
+        return;
+      }
+
+      // 按日期順序排列方便會計查賬
+      filtered.sort((a, b) => new Date(a.date) - new Date(b.date) || a.createdAt - b.createdAt);
+
+      const headers = ["日期", "類型", "分類", "金額 (HK$)", "備註說明"];
+      const rows = filtered.map((item) => {
+        const typeStr = item.type === "income" ? "收入" : "支出";
+        const amtStr = item.type === "income" ? item.amount : `-${item.amount}`;
+        const catStr = `"${(item.category || "").replace(/"/g, '""')}"`;
+        const descStr = `"${(item.description || "").replace(/"/g, '""')}"`;
+        return [`"${item.date}"`, `"${typeStr}"`, catStr, amtStr, descStr].join(",");
+      });
+
+      const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\r\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `大輝記賬_${selectedMonth}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    });
+
+    // Firebase 實時監聽
+    onValue(recordsRef, (snapshot) => {
+      const statusEl = document.getElementById("connectionStatus");
+      statusEl.className = "flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full font-medium";
+      statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> 實時同步中';
+
+      const data = snapshot.val();
+      rawRecords = [];
+      if (data) {
+        Object.entries(data).forEach(([key, val]) => {
+          rawRecords.push({ id: key, ...val });
+        });
+      }
+      renderRecords();
+    }, (error) => {
+      const statusEl = document.getElementById("connectionStatus");
+      statusEl.className = "flex items-center gap-1.5 text-xs text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full font-medium";
+      statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500"></span> 連線失敗';
+    });
+
+    // 提交記賬表單
+    document.getElementById("recordForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const amount = document.getElementById("amount").value;
+      const description = document.getElementById("description").value.trim();
+      const date = document.getElementById("recordDate").value;
+
+      if (!amount || isNaN(amount) || Number(amount) <= 0) {
+        alert("請輸入有效金額");
+        return;
+      }
+
+      await push(recordsRef, {
+        type: currentType,
+        amount: parseFloat(amount),
+        category: selectedCategory,
+        description,
+        date,
+        createdAt: Date.now()
+      });
+
+      monthInput.value = date.substring(0, 7);
+      document.getElementById("amount").value = "";
+      document.getElementById("description").value = "";
+    });
+
+    // 初始化分類介面
+    renderCategoryButtons();
+  </script>
+</body>
+</html>
+
