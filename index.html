@@ -3,85 +3,44 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
-    <title>大輝記賬 · 全面版</title>
-
-    <!-- Firebase SDK (compat) -->
+    <title>大輝記賬 · 匿名版</title>
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-
-    <!-- Chart.js 畫圖 -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <style>
-        /* ===== 全域樣式 (同之前一樣) ===== */
+        /* 同之前一樣嘅 style，為咗節省篇幅呢度省略，你用返原本嘅 style 就得 */
+        /* 如果懶，可以直接複製上面完整版嘅 style 貼落嚟 */
         * { margin:0; padding:0; box-sizing:border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
         body { background:#f5f7fb; padding:12px 10px 40px; display:flex; justify-content:center; min-height:100vh; }
         .app { max-width:500px; width:100%; }
-
-        :root {
-            --primary: #4f46e5;
-            --primary-light: #818cf8;
-            --primary-bg: #eef2ff;
-            --card-bg: #ffffff;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-            --shadow: 0 4px 14px rgba(0,0,0,0.04);
-            --radius: 24px;
-        }
-        .theme-dark {
-            --primary: #6b63ff;
-            --primary-light: #9aa2ff;
-            --primary-bg: #2d2a4a;
-            --card-bg: #1e1e2f;
-            --text-main: #e2e8f0;
-            --text-muted: #94a3b8;
-            --border: #334155;
-            --shadow: 0 4px 14px rgba(0,0,0,0.3);
-            background: #111827;
-        }
-        .theme-orange {
-            --primary: #e67e22;
-            --primary-light: #f39c12;
-            --primary-bg: #fdebd0;
-            --card-bg: #ffffff;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --border: #f0d5b0;
-        }
-
-        .card { background:var(--card-bg); border-radius:var(--radius); padding:18px 16px; margin-bottom:16px; box-shadow:var(--shadow); transition:0.2s; }
+        :root { --primary:#4f46e5; --primary-light:#818cf8; --primary-bg:#eef2ff; --card-bg:#ffffff; --text-main:#0f172a; --text-muted:#64748b; --border:#e2e8f0; --shadow:0 4px 14px rgba(0,0,0,0.04); --radius:24px; }
+        .theme-dark { --primary:#6b63ff; --primary-light:#9aa2ff; --primary-bg:#2d2a4a; --card-bg:#1e1e2f; --text-main:#e2e8f0; --text-muted:#94a3b8; --border:#334155; --shadow:0 4px 14px rgba(0,0,0,0.3); background:#111827; }
+        .theme-orange { --primary:#e67e22; --primary-light:#f39c12; --primary-bg:#fdebd0; --card-bg:#ffffff; --text-main:#1e293b; --text-muted:#64748b; --border:#f0d5b0; }
+        .card { background:var(--card-bg); border-radius:var(--radius); padding:18px 16px; margin-bottom:16px; box-shadow:var(--shadow); }
         .card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:6px; }
         .card-header h2 { font-size:17px; font-weight:600; color:var(--text-main); }
         .card-header .badge { background:var(--primary-bg); color:var(--primary); font-size:12px; font-weight:500; padding:3px 12px; border-radius:30px; }
-
         .form-row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
         .form-row .field { flex:1 0 calc(50% - 8px); min-width:110px; }
         .form-row .field.full { flex:1 0 100%; }
         label { display:block; font-size:12px; font-weight:500; color:var(--text-muted); margin-bottom:3px; }
-        input, select, textarea, button {
-            width:100%; padding:10px 12px; border-radius:14px; border:1px solid var(--border);
-            background:var(--card-bg); font-size:14px; color:var(--text-main); outline:none; transition:0.2s;
-        }
+        input, select, textarea, button { width:100%; padding:10px 12px; border-radius:14px; border:1px solid var(--border); background:var(--card-bg); font-size:14px; color:var(--text-main); outline:none; transition:0.2s; }
         input:focus, select:focus, textarea:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(79,70,229,0.12); }
         textarea { resize:vertical; min-height:44px; }
-
         .btn { border:none; font-weight:600; cursor:pointer; padding:10px 14px; border-radius:40px; font-size:14px; transition:0.15s; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
         .btn-primary { background:var(--primary); color:#fff; box-shadow:0 4px 10px rgba(79,70,229,0.2); }
         .btn-primary:active { transform:scale(0.96); }
         .btn-danger { background:#fee2e2; color:#b91c1c; }
-        .btn-danger:active { background:#fecaca; }
         .btn-outline { background:transparent; border:1px solid var(--border); color:var(--text-main); }
-        .btn-google { background:#fff; border:1px solid #dadce0; color:#1a1a1a; }
         .btn-sm { padding:5px 14px; font-size:12px; }
         .btn-group { display:flex; gap:8px; flex-wrap:wrap; }
         .btn-group .btn { flex:1; }
-
         .auth-bar { display:flex; align-items:center; gap:10px; background:var(--card-bg); border-radius:40px; padding:8px 14px; margin-bottom:14px; box-shadow:var(--shadow); }
         .auth-bar .user-info { flex:1; font-size:13px; color:var(--text-main); }
-        .auth-bar .user-info span { font-weight:500; }
-
         .stats-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; text-align:center; }
         .stat-item { background:#f8fafc; border-radius:16px; padding:10px 4px; }
         .stat-item .num { font-size:20px; font-weight:700; }
@@ -89,11 +48,9 @@
         .income-num { color:#0b8a5e; }
         .expense-num { color:#b91c1c; }
         .balance-num { color:var(--text-main); }
-
         .month-selector { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
         .month-selector button { width:auto; padding:4px 14px; background:var(--primary-bg); border:none; border-radius:30px; font-size:18px; cursor:pointer; color:var(--primary); }
         .month-selector .month-label { font-weight:600; font-size:16px; color:var(--text-main); flex:1; text-align:center; }
-
         .entry-list { list-style:none; max-height:400px; overflow-y:auto; }
         .entry-list li { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border); }
         .entry-list li:last-child { border-bottom:none; }
@@ -107,11 +64,7 @@
         .del-btn { background:none; border:none; color:#cbd5e1; font-size:16px; cursor:pointer; padding:4px 6px; border-radius:20px; }
         .del-btn:active { background:#fee2e2; color:#b91c1c; }
         .empty-state { text-align:center; color:var(--text-muted); padding:30px 0 16px; font-size:14px; }
-
         .chart-container { position:relative; height:180px; margin:6px 0 10px; }
-        .chart-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-        @media (max-width:480px) { .chart-row { grid-template-columns:1fr; } }
-
         .budget-item { display:flex; align-items:center; gap:8px; margin:6px 0; }
         .budget-item .b-label { min-width:70px; font-size:13px; font-weight:500; color:var(--text-main); }
         .budget-item .b-bar { flex:1; height:8px; background:#e2e8f0; border-radius:10px; overflow:hidden; }
@@ -119,16 +72,13 @@
         .budget-item .b-bar .b-fill.warning { background:#f59e0b; }
         .budget-item .b-bar .b-fill.danger { background:#ef4444; }
         .budget-item .b-text { font-size:12px; color:var(--text-muted); min-width:70px; text-align:right; }
-
         .search-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
         .search-row input, .search-row select { flex:1; min-width:90px; padding:8px 12px; font-size:13px; }
-
         .tabs { display:flex; gap:4px; background:var(--card-bg); border-radius:40px; padding:4px; margin-bottom:14px; box-shadow:var(--shadow); }
         .tabs button { flex:1; border:none; background:transparent; padding:8px 6px; border-radius:30px; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; transition:0.2s; }
         .tabs button.active { background:var(--primary); color:#fff; box-shadow:0 2px 8px rgba(79,70,229,0.2); }
         .tab-content { display:none; }
         .tab-content.active { display:block; }
-
         .flex-between { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; }
         .mt-2 { margin-top:12px; }
         .text-center { text-align:center; }
@@ -141,20 +91,18 @@
 <body>
 <div class="app" id="app">
 
-    <!-- 標題列 -->
     <div class="flex-between" style="margin-bottom:6px;">
         <span style="font-size:24px; font-weight:700; color:var(--text-main);">📒 大輝記賬</span>
-        <span style="font-size:12px; color:var(--text-muted);">全面版</span>
+        <span style="font-size:12px; color:var(--text-muted);">匿名版</span>
     </div>
 
-    <!-- 登入欄 -->
+    <!-- 登入狀態欄（改為顯示匿名） -->
     <div class="auth-bar" id="authBar">
         <div class="user-info" id="userInfo">⏳ 連線中...</div>
-        <button class="btn btn-google btn-sm" id="authBtn">登入 Google</button>
         <button class="btn btn-outline btn-sm" id="themeToggle" title="轉主題">🎨</button>
     </div>
 
-    <!-- 分頁標籤 -->
+    <!-- 分頁標籤（同之前一樣） -->
     <div class="tabs" id="mainTabs">
         <button class="active" data-tab="tab1">📊 總覽</button>
         <button data-tab="tab2">✏️ 記賬</button>
@@ -163,7 +111,6 @@
         <button data-tab="tab5">⚙️ 設定</button>
     </div>
 
-    <!-- ============================================ -->
     <!-- TAB 1: 總覽 -->
     <div class="tab-content active" id="tab1">
         <div class="card">
@@ -181,12 +128,10 @@
                 日均支出 <span id="dailyAvg">0</span> ｜ 本月剩 <span id="daysLeft">0</span> 日
             </div>
         </div>
-
         <div class="card" id="budgetOverview">
             <div class="card-header"><h2>💰 預算進度</h2><span class="badge" id="budgetStatus">正常</span></div>
             <div id="budgetList"></div>
         </div>
-
         <div class="card">
             <div class="card-header"><h2>⚡ 快速記</h2><span class="badge">常用</span></div>
             <div class="btn-group" id="quickActions">
@@ -198,7 +143,6 @@
         </div>
     </div>
 
-    <!-- ============================================ -->
     <!-- TAB 2: 記賬 -->
     <div class="tab-content" id="tab2">
         <div class="card" id="addCard">
@@ -245,8 +189,7 @@
         </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- TAB 3: 記錄 (含搜尋篩選) -->
+    <!-- TAB 3: 記錄 -->
     <div class="tab-content" id="tab3">
         <div class="card">
             <div class="card-header"><h2>🔍 搜尋記錄</h2><span class="badge" id="resultCount">0 筆</span></div>
@@ -278,7 +221,6 @@
         </div>
     </div>
 
-    <!-- ============================================ -->
     <!-- TAB 4: 圖表 -->
     <div class="tab-content" id="tab4">
         <div class="card">
@@ -299,7 +241,6 @@
         </div>
     </div>
 
-    <!-- ============================================ -->
     <!-- TAB 5: 設定 -->
     <div class="tab-content" id="tab5">
         <div class="card">
@@ -340,18 +281,16 @@
         </div>
     </div>
 
-    <div class="text-center text-muted" style="margin-top:8px;">☁️ 自動同步 · 數據儲存喺 Firebase</div>
+    <div class="text-center text-muted" style="margin-top:8px;">☁️ 自動同步 · 數據儲存喺 Firebase · 匿名登入</div>
 </div>
 
 <script>
 // ============================================================
-//  🚀 大輝記賬 · 完整 JavaScript (改用 Redirect 登入)
+//  大輝記賬 · 匿名登入版 (完全無需 Google)
 // ============================================================
-
 (function() {
     'use strict';
 
-    // ---------- Firebase Config ----------
     const firebaseConfig = {
         apiKey: "AIzaSyBFfgFYyh1AGvpBYHdRUtHsnBz6pawPZOI",
         authDomain: "break-even-record-calculation.firebaseapp.com",
@@ -366,19 +305,17 @@
     const auth = firebase.auth();
     const database = firebase.database();
 
-    // ---------- 全域狀態 ----------
+    // ---------- 狀態 ----------
     let currentUser = null;
-    let dbRef = null;
-    let trashRef = null;
-    let allEntries = [];
-    let trashEntries = [];
+    let dbRef = null, trashRef = null;
+    let allEntries = [], trashEntries = [];
     let currentYear = 2026, currentMonth = 8;
     let currencySymbol = '$';
-    let customCategoryList = ['飲食','交通','購物','娛樂','屋企雜項','醫療','投資','其他','人工','兼職','獎金','禮物'];
     let chartPie = null, chartLine = null;
     let searchResults = [];
 
-    // ---------- DOM 參考 ----------
+    // DOM refs (同之前一樣，為節省篇幅呢度省略，你直接複製上面完整嘅 DOM 變數就得)
+    // 但為咗完整，我照貼一次 (其實可以偷懶，但為咗確保用到，我照貼)
     const $ = id => document.getElementById(id);
     const typeSelect = $('typeSelect');
     const categoryInput = $('categoryInput');
@@ -398,7 +335,6 @@
     const currentMonthLabel = $('currentMonthLabel');
     const prevMonthBtn = $('prevMonthBtn');
     const nextMonthBtn = $('nextMonthBtn');
-    const authBtn = $('authBtn');
     const userInfo = $('userInfo');
     const themeToggle = $('themeToggle');
     const themeSelect = $('themeSelect');
@@ -429,32 +365,25 @@
     const todayBadge = $('todayBadge');
     const quickActions = document.getElementById('quickActions');
 
-    // ---------- 輔助函數 ----------
+    // ---------- 輔助 ----------
     function todayStr() {
         const d = new Date();
         return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
     }
-    function formatDate(dateStr) {
-        const p = dateStr.split('-');
-        return p[1]+'/'+p[2];
-    }
-    function formatCurrency(amount) {
-        return currencySymbol + amount.toFixed(1);
-    }
+    function formatDate(dateStr) { const p = dateStr.split('-'); return p[1]+'/'+p[2]; }
+    function formatCurrency(amount) { return currencySymbol + amount.toFixed(1); }
     function generateId() { return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
-
     function getMonthEntries(entries, year, month) {
         const prefix = year + '-' + String(month).padStart(2,'0');
         return entries.filter(e => e.date && e.date.startsWith(prefix));
     }
-
     function calcStats(entries) {
         let inc=0, exp=0;
         entries.forEach(e => { if(e.type==='income') inc+=e.amount; else exp+=e.amount; });
         return { income: inc, expense: exp, balance: inc-exp };
     }
 
-    // ---------- 渲染主畫面 ----------
+    // ---------- 渲染 (同之前完全一樣) ----------
     function renderDashboard() {
         const monthEntries = getMonthEntries(allEntries, currentYear, currentMonth);
         const stats = calcStats(monthEntries);
@@ -462,7 +391,6 @@
         totalExpense.textContent = formatCurrency(stats.expense);
         totalBalance.textContent = formatCurrency(stats.balance);
         currentMonthLabel.textContent = currentYear + '年' + currentMonth + '月';
-
         const now = new Date();
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
         let dayNow = (currentYear===now.getFullYear() && currentMonth===now.getMonth()+1) ? now.getDate() : daysInMonth;
@@ -471,9 +399,7 @@
         dailyAvg.textContent = formatCurrency(avg);
         const left = daysInMonth - dayNow;
         daysLeft.textContent = left;
-
         renderBudget(monthEntries);
-
         const lastMonth = currentMonth===1 ? 12 : currentMonth-1;
         const lastYear = currentMonth===1 ? currentYear-1 : currentYear;
         const lastEntries = getMonthEntries(allEntries, lastYear, lastMonth);
@@ -485,12 +411,8 @@
             const diff = ((curExp - lastExp)/lastExp*100);
             compareDiff.textContent = (diff>0?'+':'') + diff.toFixed(1) + '%';
             compareDiff.style.color = diff>0 ? '#b91c1c' : '#0b8a5e';
-        } else {
-            compareDiff.textContent = '--';
-        }
-
+        } else { compareDiff.textContent = '--'; }
         updateCharts(monthEntries);
-
         if (searchResults.length === 0) {
             renderEntryList(monthEntries);
             resultCount.textContent = monthEntries.length + ' 筆';
@@ -557,8 +479,7 @@
                 catSpend[cat] = (catSpend[cat]||0) + e.amount;
             }
         });
-        let html = '';
-        let overCount = 0;
+        let html = '', overCount = 0;
         for (const [cat, limit] of Object.entries(budgetMap)) {
             const spent = catSpend[cat] || 0;
             const pct = limit>0 ? (spent/limit*100) : 0;
@@ -586,7 +507,6 @@
         const labels = Object.keys(catMap);
         const data = Object.values(catMap);
         const colors = ['#4f46e5','#f59e0b','#ef4444','#10b981','#8b5cf6','#ec4899','#14b8a6','#f97316'];
-
         const ctxPie = document.getElementById('pieChart').getContext('2d');
         if (chartPie) chartPie.destroy();
         chartPie = new Chart(ctxPie, {
@@ -594,7 +514,6 @@
             data: { labels, datasets: [{ data, backgroundColor: colors.slice(0,labels.length), borderWidth:0 }] },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth:12, font:{size:10} } } } }
         });
-
         const days = new Date(currentYear, currentMonth, 0).getDate();
         const dailyExp = new Array(days).fill(0);
         const dailyInc = new Array(days).fill(0);
@@ -621,37 +540,31 @@
         });
     }
 
-    // ---------- Firebase 監聽 ----------
+    // ---------- Firebase 監聽 (匿名登入後綁定) ----------
     function attachDatabaseListener(user) {
         if (dbRef) { dbRef.off(); }
         if (trashRef) { trashRef.off(); }
         dbRef = database.ref('users/' + user.uid + '/entries');
         trashRef = database.ref('users/' + user.uid + '/trash');
-
         dbRef.on('value', snapshot => {
             const data = snapshot.val();
             if (data) {
                 allEntries = Object.keys(data).map(k => ({ ...data[k], id: k }));
-            } else {
-                allEntries = [];
-            }
+            } else { allEntries = []; }
             searchResults = [];
             renderDashboard();
         });
-
         trashRef.on('value', snapshot => {
             const data = snapshot.val();
             if (data) {
                 trashEntries = Object.keys(data).map(k => ({ ...data[k], id: k, trashKey: k }));
-            } else {
-                trashEntries = [];
-            }
+            } else { trashEntries = []; }
         });
     }
 
-    // ---------- 新增記錄 ----------
+    // ---------- 核心操作 ----------
     function addEntry(clearAfter=true) {
-        if (!currentUser) { alert('請先登入'); return; }
+        if (!currentUser) { alert('未登入'); return; }
         const type = typeSelect.value;
         let category = categoryInput.value.trim() || (type==='income'?'收入':'支出');
         const amount = parseFloat(amountInput.value);
@@ -659,7 +572,6 @@
         const note = noteInput.value.trim() || '';
         if (isNaN(amount) || amount<=0) { alert('請輸入有效金額 (>0)'); amountInput.focus(); return; }
         if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { alert('日期格式錯誤'); dateInput.focus(); return; }
-
         const id = generateId();
         const entry = { type, category, amount, date, note, createdAt: Date.now() };
         dbRef.child(id).set(entry).then(() => {
@@ -673,7 +585,6 @@
         }).catch(err => alert('儲存失敗: '+err.message));
     }
 
-    // ---------- 移到垃圾桶 ----------
     function moveToTrash(id) {
         if (!currentUser || !dbRef) return;
         const entry = allEntries.find(e => e.id===id);
@@ -702,7 +613,6 @@
         }
     }
 
-    // ---------- 匯出/匯入 CSV ----------
     function exportCSV() {
         if (allEntries.length===0) { alert('冇記錄可匯出'); return; }
         let csv = '日期,類型,分類,金額,備註\n';
@@ -724,7 +634,7 @@
             if (lines.length<2) { alert('CSV 格式唔啱'); return; }
             const headers = lines[0].split(',').map(h => h.trim());
             const idx = { date: headers.indexOf('日期'), type: headers.indexOf('類型'), category: headers.indexOf('分類'), amount: headers.indexOf('金額'), note: headers.indexOf('備註') };
-            if (idx.date===-1 || idx.type===-1 || idx.amount===-1) { alert('CSV 缺少必要欄位 (日期,類型,金額)'); return; }
+            if (idx.date===-1 || idx.type===-1 || idx.amount===-1) { alert('CSV 缺少必要欄位'); return; }
             let count=0;
             for (let i=1; i<lines.length; i++) {
                 const cols = lines[i].split(',').map(c => c.trim());
@@ -743,7 +653,6 @@
         reader.readAsText(file);
     }
 
-    // ---------- 搜尋 ----------
     function doSearch() {
         const kw = searchKeyword.value.trim().toLowerCase();
         const type = searchType.value;
@@ -751,7 +660,6 @@
         const to = searchDateTo.value;
         const min = parseFloat(searchAmountMin.value) || 0;
         const max = parseFloat(searchAmountMax.value) || Infinity;
-
         let results = allEntries.filter(e => {
             if (type && e.type!==type) return false;
             if (from && e.date < from) return false;
@@ -769,7 +677,6 @@
         resultCount.textContent = results.length + ' 筆';
     }
 
-    // ---------- 主題 ----------
     function setTheme(theme) {
         document.body.className = '';
         if (theme==='dark') document.body.classList.add('theme-dark');
@@ -782,34 +689,36 @@
     function init() {
         dateInput.value = todayStr();
         todayBadge.textContent = '今日 '+todayStr();
-
         const savedCurrency = localStorage.getItem('dahui_currency') || '$';
         currencySymbol = savedCurrency;
         currencySelect.value = savedCurrency;
-
         const savedTheme = localStorage.getItem('dahui_theme') || 'default';
         setTheme(savedTheme);
-
         const savedCats = localStorage.getItem('dahui_custom_cats');
         if (savedCats) {
             customCats.value = savedCats;
-            customCategoryList = savedCats.split(',').map(s=>s.trim()).filter(Boolean);
-            updateCategoryDatalist();
+            // update datalist
+            const datalist = document.getElementById('catSuggest');
+            datalist.innerHTML = savedCats.split(',').map(s=>s.trim()).filter(Boolean).map(c => `<option value="${c}">`).join('');
         }
 
-        // ---------- 登入狀態監聽 (含重定向結果處理) ----------
+        // ---------- 自動匿名登入 ----------
+        auth.signInAnonymously().then(() => {
+            // 登入成功
+        }).catch(err => {
+            alert('匿名登入失敗: '+err.message);
+        });
+
         auth.onAuthStateChanged(user => {
             if (user) {
                 currentUser = user;
-                userInfo.innerHTML = `👤 <span>${user.displayName || user.email || '用戶'}</span>`;
-                authBtn.textContent = '登出';
+                const displayName = user.isAnonymous ? '匿名用戶' : (user.displayName || user.email || '用戶');
+                userInfo.innerHTML = `👤 <span>${displayName}</span>`;
                 attachDatabaseListener(user);
                 document.getElementById('addCard').classList.remove('disabled-overlay');
             } else {
                 currentUser = null;
-                userInfo.innerHTML = '🚫 未登入';
-                authBtn.textContent = '登入 Google';
-                document.getElementById('addCard').classList.add('disabled-overlay');
+                userInfo.innerHTML = '🚫 未連線';
                 if (dbRef) { dbRef.off(); dbRef=null; }
                 if (trashRef) { trashRef.off(); trashRef=null; }
                 allEntries = [];
@@ -818,50 +727,26 @@
             }
         });
 
-        // 處理重定向登入返回結果 (新增呢部分)
-        auth.getRedirectResult().catch(err => {
-            // 若錯誤可忽略或提示
-            console.warn('Redirect result error:', err);
-        });
-
-        // ---------- 登入/登出 (改用 Redirect) ----------
-        authBtn.addEventListener('click', function() {
-            if (currentUser) {
-                auth.signOut().catch(err => alert('登出失敗: '+err.message));
-            } else {
-                const provider = new firebase.auth.GoogleAuthProvider();
-                // 使用重定向方式 (避開 popup 封鎖)
-                auth.signInWithRedirect(provider);
-            }
-        });
-
-        // ---------- 其餘事件綁定 (同之前一樣) ----------
+        // ---------- 事件綁定 ----------
         themeToggle.addEventListener('click', function() {
             const next = { default:'dark', dark:'orange', orange:'default' };
             const current = themeSelect.value || 'default';
             setTheme(next[current] || 'default');
         });
         themeSelect.addEventListener('change', function() { setTheme(this.value); });
-
         currencySelect.addEventListener('change', function() {
             currencySymbol = this.value;
             localStorage.setItem('dahui_currency', currencySymbol);
             renderDashboard();
         });
-
         saveCatsBtn.addEventListener('click', function() {
             const val = customCats.value.split(',').map(s=>s.trim()).filter(Boolean);
             if (val.length===0) { alert('請輸入至少一個分類'); return; }
-            customCategoryList = val;
             localStorage.setItem('dahui_custom_cats', customCats.value);
-            updateCategoryDatalist();
+            const datalist = document.getElementById('catSuggest');
+            datalist.innerHTML = val.map(c => `<option value="${c}">`).join('');
             alert('分類已儲存！');
         });
-
-        function updateCategoryDatalist() {
-            const datalist = document.getElementById('catSuggest');
-            datalist.innerHTML = customCategoryList.map(c => `<option value="${c}">`).join('');
-        }
 
         prevMonthBtn.addEventListener('click', function() {
             let m=currentMonth-1, y=currentYear;
@@ -952,7 +837,7 @@
         }
 
         clearAllBtn.addEventListener('click', function() {
-            if (!currentUser) { alert('請先登入'); return; }
+            if (!currentUser) { alert('未登入'); return; }
             if (allEntries.length===0) return;
             if (confirm('⚠️ 確定刪除所有記錄？會移入垃圾桶。')) {
                 const promises = allEntries.map(e => {
