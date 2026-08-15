@@ -10,6 +10,7 @@
 {"imports":{"firebase/app":"https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js","firebase/firestore":"https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js","firebase/analytics":"https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js","firebase/auth":"https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js"}}
 </script>
 <style>
+/* 全部樣式同上，為節省空間省略，但你可以用返之前嘅完整樣式 */
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI','PingFang TC','Microsoft YaHei',sans-serif}
 body{background:#f5f7fb;padding:16px;min-height:100vh}
 .app-wrapper{max-width:1200px;margin:0 auto;background:#fff;border-radius:32px;box-shadow:0 20px 60px rgba(0,0,0,0.08);padding:24px 28px 32px}
@@ -36,7 +37,6 @@ body{background:#f5f7fb;padding:16px;min-height:100vh}
 .summary-card .amount.expense{color:#dc2626}
 .summary-card .amount.balance{color:#0f172a}
 .summary-card .sub{font-size:12px;color:#94a3b8;margin-top:4px}
-.summary-card .budget-warning{color:#dc2626;font-weight:600;font-size:12px;margin-top:4px}
 .form-section{background:#f8fafc;border-radius:20px;padding:18px 20px 20px;margin-bottom:24px;border:1px solid #eef2f6}
 .form-section .form-title{font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
 .form-grid{display:grid;grid-template-columns:1fr 1fr 1.2fr 1.2fr 1fr 1fr auto;gap:12px;align-items:end}
@@ -104,6 +104,220 @@ body{background:#f5f7fb;padding:16px;min-height:100vh}
 @media(max-width:600px){.app-wrapper{padding:16px 14px}.form-grid{grid-template-columns:1fr 1fr}.form-grid .btn-add{grid-column:span 2;justify-content:center}.summary-cards{grid-template-columns:1fr}.charts-grid{grid-template-columns:1fr}.record-item{grid-template-columns:60px 1fr 50px 30px;font-size:11px;padding:6px 10px}.record-item .r-type{display:none}.top-bar .nav-tabs button{padding:6px 12px;font-size:12px}.month-selector .month-label{min-width:70px;font-size:14px}}
 </style>
 </head>
+<body>
+<div class="app-wrapper">
+<div class="top-bar">
+<div class="logo"><i class="fas fa-cloud"></i> 大輝收支管家</div>
+<div class="nav-tabs">
+<button class="active" data-page="page-record">📋 記錄</button>
+<button data-page="page-stats">📊 統計</button>
+<button data-page="page-budget">💰 預算</button>
+<button data-page="page-settings">⚙️ 設定</button>
+</div>
+<div class="month-selector">
+<button id="prevMonth"><i class="fas fa-chevron-left"></i></button>
+<span class="month-label" id="monthLabel">2026年8月</span>
+<button id="nextMonth"><i class="fas fa-chevron-right"></i></button>
+<button id="todayBtn" class="btn-today">今日</button>
+</div>
+</div>
+<div id="page-record" class="page active">
+<div class="summary-cards">
+<div class="summary-card"><div class="label"><i class="fas fa-arrow-up" style="color:#16a34a;"></i> 收入</div><div class="amount income" id="totalIncome">HK$0</div><div class="sub" id="incomeCount">0筆</div></div>
+<div class="summary-card"><div class="label"><i class="fas fa-arrow-down" style="color:#dc2626;"></i> 支出</div><div class="amount expense" id="totalExpense">HK$0</div><div class="sub" id="expenseCount">0筆</div></div>
+<div class="summary-card"><div class="label"><i class="fas fa-scale-balanced" style="color:#3b82f6;"></i> 結餘</div><div class="amount balance" id="balance">HK$0</div><div class="sub" id="balanceInfo">平衡</div></div>
+<div class="summary-card"><div class="label"><i class="fas fa-clock" style="color:#f59e0b;"></i> 本月預算剩餘</div><div class="amount balance" id="budgetRemain">--</div><div class="sub" id="budgetStatus"></div></div>
+</div>
+<div class="form-section">
+<div class="form-title"><i class="fas fa-plus-circle" style="color:#3b82f6;"></i> 新增記錄</div>
+<form id="recordForm" class="form-grid">
+<div class="form-group"><label>日期</label><input type="date" id="recordDate" required></div>
+<div class="form-group"><label>類型</label><select id="recordType" required><option value="income">收入</option><option value="expense">支出</option></select></div>
+<div class="form-group"><label>主類別</label><input type="text" id="recordMainCat" placeholder="例如：飲食、工作" required></div>
+<div class="form-group"><label>子類別 (自由輸入)</label><input type="text" id="recordSubCat" placeholder="例如：買餸、人工"></div>
+<div class="form-group"><label>金額 (HK$)</label><input type="number" id="recordAmount" placeholder="0.00" min="0.01" step="0.01" required></div>
+<div class="form-group"><label>付款方式</label><input type="text" id="recordPayment" placeholder="現金/轉賬..."></div>
+<button type="submit" class="btn-add"><i class="fas fa-check"></i> 新增</button>
+</form>
+</div>
+<div class="charts-grid">
+<div class="chart-box"><div class="chart-title"><i class="fas fa-chart-line"></i> 收支趨勢 (近6月)</div><canvas id="trendChart"></canvas><div id="trendEmpty" class="empty-chart" style="display:none;">無數據</div></div>
+<div class="chart-box"><div class="chart-title"><i class="fas fa-chart-pie"></i> 支出分類</div><canvas id="expensePieChart"></canvas><div id="expensePieEmpty" class="empty-chart" style="display:none;">本月無支出</div></div>
+<div class="chart-box"><div class="chart-title"><i class="fas fa-chart-pie"></i> 收入分類</div><canvas id="incomePieChart"></canvas><div id="incomePieEmpty" class="empty-chart" style="display:none;">本月無收入</div></div>
+</div>
+<div class="records-header"><div class="record-count">共 <span id="recordCount">0</span> 筆</div><div class="records-actions"><button id="exportBtn"><i class="fas fa-download"></i> 匯出</button><button id="importBtn"><i class="fas fa-upload"></i> 匯入</button><button id="clearBtn" class="btn-danger"><i class="fas fa-trash"></i> 清除</button></div></div>
+<div class="record-list" id="recordList"></div>
+</div>
+<div id="page-stats" class="page">
+<h3 style="margin-bottom:12px;">📊 詳細統計</h3>
+<div class="stats-view"><button class="active" data-period="day">日</button><button data-period="week">週</button><button data-period="month">月</button><button data-period="year">年</button></div>
+<div id="statsContainer"><p style="color:#94a3b8;">選擇時段查看統計</p></div>
+</div>
+<div id="page-budget" class="page">
+<h3 style="margin-bottom:12px;">💰 每月預算管理</h3>
+<div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+<input type="number" id="budgetTotal" placeholder="總預算 (HK$)" style="padding:8px 14px; border:1px solid #e2e8f0; border-radius:10px; width:180px;">
+<button id="setTotalBudget" class="btn-add" style="height:40px;">設定總預算</button>
+<span style="font-size:14px; color:#475569; align-self:center;" id="totalBudgetDisplay">未設定</span>
+</div>
+<div id="budgetCategoryList" class="budget-grid"></div>
+<div style="margin-top:16px; display:flex; gap:12px;">
+<input type="text" id="budgetCatName" placeholder="類別名稱" style="padding:8px 14px; border:1px solid #e2e8f0; border-radius:10px; width:160px;">
+<input type="number" id="budgetCatAmount" placeholder="預算金額" style="padding:8px 14px; border:1px solid #e2e8f0; border-radius:10px; width:140px;">
+<button id="addCategoryBudget" class="btn-add" style="height:40px;">新增類別預算</button>
+</div>
+</div>
+<div id="page-settings" class="page">
+<h3 style="margin-bottom:12px;">⚙️ 設定與工具</h3>
+<div class="settings-group">
+<button id="exportBtn2"><i class="fas fa-download"></i> 匯出所有數據 (JSON)</button>
+<button id="importBtn2"><i class="fas fa-upload"></i> 匯入數據</button>
+<button id="clearBtn2" class="btn-danger"><i class="fas fa-trash"></i> 清除全部數據</button>
+</div>
+<p style="color:#94a3b8; margin-top:8px;">數據儲存於 Firebase 雲端，自動同步。</p>
+</div>
+<input type="file" id="fileInput" class="hidden-input" accept=".json">
+</div>
+<div class="toast-container" id="toastContainer"></div>
+<script type="module">
+import{initializeApp}from"firebase/app";
+import{getFirestore,collection,addDoc,deleteDoc,doc,getDocs,query,orderBy,writeBatch,setDoc,getDoc}from"firebase/firestore";
+import{getAnalytics}from"firebase/analytics";
+import{getAuth,signInAnonymously,onAuthStateChanged}from"firebase/auth";
+
+const firebaseConfig={apiKey:"AIzaSyBFfgFYyh1AGvpBYHdRUtHsnBz6pawPZOI",authDomain:"break-even-record-calculation.firebaseapp.com",projectId:"break-even-record-calculation",storageBucket:"break-even-record-calculation.firebasestorage.app",messagingSenderId:"963032266930",appId:"1:963032266930:web:23f60bb6409e55f1e371ab",measurementId:"G-0RH7CCVNB6"};
+const app=initializeApp(firebaseConfig);
+const analytics=getAnalytics(app);
+const db=getFirestore(app);
+const auth=getAuth(app);
+signInAnonymously(auth).catch(()=>showToast('匿名登入失敗','error'));
+
+// ===== 資料庫操作 (修復預算儲存) =====
+const DB={
+  async getAll(){
+    const q=query(collection(db,"records"),orderBy("date","desc"));
+    const snap=await getDocs(q);
+    const records=[];
+    snap.forEach(d=>{
+      const data=d.data();
+      records.push({id:d.id,...data,amount:Number(data.amount)||0});
+    });
+    return records;
+  },
+  async add(record){
+    const{id,...data}=record;
+    const docRef=await addDoc(collection(db,"records"),{...data,amount:Number(data.amount),createdAt:new Date().toISOString()});
+    return{id:docRef.id,...data};
+  },
+  async delete(id){await deleteDoc(doc(db,"records",id));},
+  async clearAll(){
+    const snap=await getDocs(collection(db,"records"));
+    const batch=writeBatch(db);
+    snap.forEach(d=>batch.delete(d.ref));
+    await batch.commit();
+  },
+  async exportData(){
+    const records=await this.getAll();
+    return JSON.stringify(records,null,2);
+  },
+  async importData(jsonStr){
+    const data=JSON.parse(jsonStr);
+    if(!Array.isArray(data))throw new Error('格式錯誤');
+    await this.clearAll();
+    for(const rec of data){
+      const{id,...rest}=rec;
+      await addDoc(collection(db,"records"),{...rest,amount:Number(rest.amount)||0,createdAt:rest.createdAt||new Date().toISOString()});
+    }
+    return true;
+  },
+  async count(){const snap=await getDocs(collection(db,"records"));return snap.size;},
+  async getByMonth(year,month){
+    const all=await this.getAll();
+    return all.filter(r=>{
+      const d=new Date(r.date);
+      return d.getFullYear()===year&&d.getMonth()===month;
+    });
+  },
+  async getSummary(year,month){
+    const records=await this.getByMonth(year,month);
+    let totalIncome=0,totalExpense=0,countIncome=0,countExpense=0;
+    const incomeByCat={},expenseByCat={};
+    for(const r of records){
+      const amt=Number(r.amount)||0;
+      const cat=r.mainCategory||r.category||'未分類';
+      if(r.type==='income'){
+        totalIncome+=amt;countIncome++;
+        incomeByCat[cat]=(incomeByCat[cat]||0)+amt;
+      }else{
+        totalExpense+=amt;countExpense++;
+        expenseByCat[cat]=(expenseByCat[cat]||0)+amt;
+      }
+    }
+    return{totalIncome,totalExpense,countIncome,countExpense,balance:totalIncome-totalExpense,records,incomeByCat,expenseByCat};
+  },
+  async getTrend(year,month){
+    const result=[];
+    for(let i=5;i>=0;i--){
+      const d=new Date(year,month-i,1);
+      const y=d.getFullYear(),m=d.getMonth();
+      const s=await this.getSummary(y,m);
+      result.push({label:`${y}/${String(m+1).padStart(2,'0')}`,income:s.totalIncome,expense:s.totalExpense,balance:s.balance});
+    }
+    return result;
+  }
+};
+
+// ===== 預算管理 (使用 setDoc 固定 ID) =====
+const BudgetDB={
+  async load(){
+    const docRef=doc(db,"settings","budgets");
+    const snap=await getDoc(docRef);
+    if(snap.exists()){
+      return snap.data();
+    }else{
+      const defaultBudget={total:0,categories:{}};
+      await setDoc(docRef,defaultBudget);
+      return defaultBudget;
+    }
+  },
+  async save(budget){
+    const docRef=doc(db,"settings","budgets");
+    await setDoc(docRef,budget);
+  }
+};
+
+// ===== 主程式 =====
+const App={
+  year:new Date().getFullYear(),
+  month:new Date().getMonth(),
+  budgets:{total:0,categories:{}},
+  trendChart:null,expensePieChart:null,incomePieChart:null,
+  els:{},
+
+  async init(){
+    // 獲取 DOM
+    this.els={
+      monthLabel:document.getElementById('monthLabel'),
+      prevBtn:document.getElementById('prevMonth'),
+      nextBtn:document.getElementById('nextMonth'),
+      todayBtn:document.getElementById('todayBtn'),
+      totalIncome:document.getElementById('totalIncome'),
+      totalExpense:document.getElementById('totalExpense'),
+      balance:document.getElementById('balance'),
+      incomeCount:document.getElementById('incomeCount'),
+      expenseCount:document.getElementById('expenseCount'),
+      balanceInfo:document.getElementById('balanceInfo'),
+      budgetRemain:document.getElementById('budgetRemain'),
+      budgetStatus:document.getElementById('budgetStatus'),
+      recordCount:document.getElementById('recordCount'),
+      recordList:document.getElementById('recordList'),
+      recordDate:document.getElementById('recordDate'),
+      recordType:document.getElementById('recordType'),
+      recordMainCat:document.getElementById('recordMainCat'),
+      recordSubCat:document.getElementById('recordSubCat'),
+      recordAmount:document.getElementById('recordAmount'),
+      recordPayment:document.getElementById('recordPayment'),
+      recordForm:document.g</head>
 <body>
 <div class="app-wrapper">
 <div class="top-bar">
