@@ -14,12 +14,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <style>
-        /* ===== 全域樣式 ===== */
+        /* ===== 全域樣式 (同之前一樣) ===== */
         * { margin:0; padding:0; box-sizing:border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
         body { background:#f5f7fb; padding:12px 10px 40px; display:flex; justify-content:center; min-height:100vh; }
         .app { max-width:500px; width:100%; }
 
-        /* 主題色彩 (預設藍) */
         :root {
             --primary: #4f46e5;
             --primary-light: #818cf8;
@@ -52,13 +51,11 @@
             --border: #f0d5b0;
         }
 
-        /* 通用卡片 */
         .card { background:var(--card-bg); border-radius:var(--radius); padding:18px 16px; margin-bottom:16px; box-shadow:var(--shadow); transition:0.2s; }
         .card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:6px; }
         .card-header h2 { font-size:17px; font-weight:600; color:var(--text-main); }
         .card-header .badge { background:var(--primary-bg); color:var(--primary); font-size:12px; font-weight:500; padding:3px 12px; border-radius:30px; }
 
-        /* 表單 */
         .form-row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
         .form-row .field { flex:1 0 calc(50% - 8px); min-width:110px; }
         .form-row .field.full { flex:1 0 100%; }
@@ -81,12 +78,10 @@
         .btn-group { display:flex; gap:8px; flex-wrap:wrap; }
         .btn-group .btn { flex:1; }
 
-        /* 登入欄 */
         .auth-bar { display:flex; align-items:center; gap:10px; background:var(--card-bg); border-radius:40px; padding:8px 14px; margin-bottom:14px; box-shadow:var(--shadow); }
         .auth-bar .user-info { flex:1; font-size:13px; color:var(--text-main); }
         .auth-bar .user-info span { font-weight:500; }
 
-        /* 統計數字 */
         .stats-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; text-align:center; }
         .stat-item { background:#f8fafc; border-radius:16px; padding:10px 4px; }
         .stat-item .num { font-size:20px; font-weight:700; }
@@ -95,12 +90,10 @@
         .expense-num { color:#b91c1c; }
         .balance-num { color:var(--text-main); }
 
-        /* 月份切換 */
         .month-selector { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
         .month-selector button { width:auto; padding:4px 14px; background:var(--primary-bg); border:none; border-radius:30px; font-size:18px; cursor:pointer; color:var(--primary); }
         .month-selector .month-label { font-weight:600; font-size:16px; color:var(--text-main); flex:1; text-align:center; }
 
-        /* 記錄列表 */
         .entry-list { list-style:none; max-height:400px; overflow-y:auto; }
         .entry-list li { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border); }
         .entry-list li:last-child { border-bottom:none; }
@@ -115,12 +108,10 @@
         .del-btn:active { background:#fee2e2; color:#b91c1c; }
         .empty-state { text-align:center; color:var(--text-muted); padding:30px 0 16px; font-size:14px; }
 
-        /* 圖表容器 */
         .chart-container { position:relative; height:180px; margin:6px 0 10px; }
         .chart-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
         @media (max-width:480px) { .chart-row { grid-template-columns:1fr; } }
 
-        /* 預算進度條 */
         .budget-item { display:flex; align-items:center; gap:8px; margin:6px 0; }
         .budget-item .b-label { min-width:70px; font-size:13px; font-weight:500; color:var(--text-main); }
         .budget-item .b-bar { flex:1; height:8px; background:#e2e8f0; border-radius:10px; overflow:hidden; }
@@ -129,18 +120,15 @@
         .budget-item .b-bar .b-fill.danger { background:#ef4444; }
         .budget-item .b-text { font-size:12px; color:var(--text-muted); min-width:70px; text-align:right; }
 
-        /* 搜尋欄 */
         .search-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
         .search-row input, .search-row select { flex:1; min-width:90px; padding:8px 12px; font-size:13px; }
 
-        /* 分頁標籤 */
         .tabs { display:flex; gap:4px; background:var(--card-bg); border-radius:40px; padding:4px; margin-bottom:14px; box-shadow:var(--shadow); }
         .tabs button { flex:1; border:none; background:transparent; padding:8px 6px; border-radius:30px; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; transition:0.2s; }
         .tabs button.active { background:var(--primary); color:#fff; box-shadow:0 2px 8px rgba(79,70,229,0.2); }
         .tab-content { display:none; }
         .tab-content.active { display:block; }
 
-        /* 其他 */
         .flex-between { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; }
         .mt-2 { margin-top:12px; }
         .text-center { text-align:center; }
@@ -176,7 +164,7 @@
     </div>
 
     <!-- ============================================ -->
-    <!-- TAB 1: 總覽 (Dashboard) -->
+    <!-- TAB 1: 總覽 -->
     <div class="tab-content active" id="tab1">
         <div class="card">
             <div class="month-selector">
@@ -194,13 +182,11 @@
             </div>
         </div>
 
-        <!-- 預算概覽 (精簡) -->
         <div class="card" id="budgetOverview">
             <div class="card-header"><h2>💰 預算進度</h2><span class="badge" id="budgetStatus">正常</span></div>
             <div id="budgetList"></div>
         </div>
 
-        <!-- 快速捷徑 (常用分類) -->
         <div class="card">
             <div class="card-header"><h2>⚡ 快速記</h2><span class="badge">常用</span></div>
             <div class="btn-group" id="quickActions">
@@ -345,7 +331,7 @@
         </div>
     </div>
 
-    <!-- 垃圾桶 Modal (簡單) -->
+    <!-- 垃圾桶 Modal -->
     <div id="trashModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:999;justify-content:center;align-items:center;padding:20px;">
         <div style="background:var(--card-bg);max-width:450px;width:100%;border-radius:24px;padding:20px;max-height:70vh;overflow-y:auto;">
             <div class="flex-between"><h3>🗑 垃圾桶</h3><button id="closeTrashBtn" style="border:none;background:none;font-size:24px;cursor:pointer;">✕</button></div>
@@ -359,13 +345,13 @@
 
 <script>
 // ============================================================
-//  🚀 大輝記賬 · 完整 JavaScript
+//  🚀 大輝記賬 · 完整 JavaScript (改用 Redirect 登入)
 // ============================================================
 
 (function() {
     'use strict';
 
-    // ---------- Firebase Config (你用嗰組) ----------
+    // ---------- Firebase Config ----------
     const firebaseConfig = {
         apiKey: "AIzaSyBFfgFYyh1AGvpBYHdRUtHsnBz6pawPZOI",
         authDomain: "break-even-record-calculation.firebaseapp.com",
@@ -382,15 +368,15 @@
 
     // ---------- 全域狀態 ----------
     let currentUser = null;
-    let dbRef = null;                 // users/{uid}/entries
-    let trashRef = null;             // users/{uid}/trash
-    let allEntries = [];             // 全部記錄 (有 id)
-    let trashEntries = [];           // 垃圾桶
+    let dbRef = null;
+    let trashRef = null;
+    let allEntries = [];
+    let trashEntries = [];
     let currentYear = 2026, currentMonth = 8;
     let currencySymbol = '$';
     let customCategoryList = ['飲食','交通','購物','娛樂','屋企雜項','醫療','投資','其他','人工','兼職','獎金','禮物'];
     let chartPie = null, chartLine = null;
-    let searchResults = [];          // 搜尋結果用
+    let searchResults = [];
 
     // ---------- DOM 參考 ----------
     const $ = id => document.getElementById(id);
@@ -430,7 +416,6 @@
     const clearSearchBtn = $('clearSearchBtn');
     const exportCsvBtn = $('exportCsvBtn');
     const csvFileInput = $('csvFileInput');
-    const importCsvBtn = $('importCsvBtn');
     const showTrashBtn = $('showTrashBtn');
     const trashModal = $('trashModal');
     const closeTrashBtn = $('closeTrashBtn');
@@ -469,7 +454,7 @@
         return { income: inc, expense: exp, balance: inc-exp };
     }
 
-    // ---------- 渲染主畫面 (Dashboard + 列表) ----------
+    // ---------- 渲染主畫面 ----------
     function renderDashboard() {
         const monthEntries = getMonthEntries(allEntries, currentYear, currentMonth);
         const stats = calcStats(monthEntries);
@@ -478,7 +463,6 @@
         totalBalance.textContent = formatCurrency(stats.balance);
         currentMonthLabel.textContent = currentYear + '年' + currentMonth + '月';
 
-        // 日均 & 剩餘日數
         const now = new Date();
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
         let dayNow = (currentYear===now.getFullYear() && currentMonth===now.getMonth()+1) ? now.getDate() : daysInMonth;
@@ -488,10 +472,8 @@
         const left = daysInMonth - dayNow;
         daysLeft.textContent = left;
 
-        // 預算進度
         renderBudget(monthEntries);
 
-        // 月度對比
         const lastMonth = currentMonth===1 ? 12 : currentMonth-1;
         const lastYear = currentMonth===1 ? currentYear-1 : currentYear;
         const lastEntries = getMonthEntries(allEntries, lastYear, lastMonth);
@@ -507,10 +489,8 @@
             compareDiff.textContent = '--';
         }
 
-        // 更新圖表
         updateCharts(monthEntries);
 
-        // 更新記錄列表 (若冇搜尋結果就顯示當月)
         if (searchResults.length === 0) {
             renderEntryList(monthEntries);
             resultCount.textContent = monthEntries.length + ' 筆';
@@ -520,7 +500,6 @@
         }
     }
 
-    // ---------- 渲染記錄列表 ----------
     function renderEntryList(entries) {
         if (!entries || entries.length===0) {
             entryList.innerHTML = '<li class="empty-state">📭 冇記錄</li>';
@@ -548,7 +527,6 @@
             </li>`;
         });
         entryList.innerHTML = html;
-        // 綁定刪除
         document.querySelectorAll('.del-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
@@ -560,10 +538,8 @@
         });
     }
 
-    // ---------- 預算渲染 ----------
     function renderBudget(monthEntries) {
         if (!budgetList) return;
-        // 從 localStorage 讀取預算設定
         let budgetMap = {};
         try {
             const raw = localStorage.getItem('dahui_budget');
@@ -574,7 +550,6 @@
             budgetStatus.textContent = '未設定';
             return;
         }
-        // 統計各分類使費
         const catSpend = {};
         monthEntries.forEach(e => {
             if (e.type==='expense') {
@@ -600,9 +575,7 @@
         budgetStatus.style.color = overCount>0 ? '#b91c1c' : '#0b8a5e';
     }
 
-    // ---------- 圖表 (Chart.js) ----------
     function updateCharts(monthEntries) {
-        // 圓餅圖：分類支出
         const catMap = {};
         monthEntries.forEach(e => {
             if (e.type==='expense') {
@@ -622,7 +595,6 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth:12, font:{size:10} } } } }
         });
 
-        // 折線圖：每日支出 + 收入
         const days = new Date(currentYear, currentMonth, 0).getDate();
         const dailyExp = new Array(days).fill(0);
         const dailyInc = new Array(days).fill(0);
@@ -663,7 +635,6 @@
             } else {
                 allEntries = [];
             }
-            // 重設搜尋結果
             searchResults = [];
             renderDashboard();
         });
@@ -707,28 +678,22 @@
         if (!currentUser || !dbRef) return;
         const entry = allEntries.find(e => e.id===id);
         if (!entry) return;
-        // 從 entries 移除
         dbRef.child(id).remove().then(() => {
-            // 放入 trash
             const trashId = generateId();
             trashRef.child(trashId).set({ ...entry, deletedAt: Date.now() });
         }).catch(err => alert('刪除失敗: '+err.message));
     }
 
-    // ---------- 還原垃圾桶 ----------
     function restoreFromTrash(trashKey) {
         if (!currentUser || !trashRef) return;
         const item = trashEntries.find(t => t.trashKey===trashKey);
         if (!item) return;
-        // 從垃圾桶移除
         trashRef.child(trashKey).remove().then(() => {
-            // 放回 entries (用返原本 id)
             const { trashKey, ...rest } = item;
             dbRef.child(rest.id).set(rest);
         }).catch(err => alert('還原失敗: '+err.message));
     }
 
-    // ---------- 清空垃圾桶 ----------
     function emptyTrash() {
         if (!currentUser || !trashRef) return;
         if (trashEntries.length===0) return;
@@ -737,7 +702,7 @@
         }
     }
 
-    // ---------- 匯出 CSV ----------
+    // ---------- 匯出/匯入 CSV ----------
     function exportCSV() {
         if (allEntries.length===0) { alert('冇記錄可匯出'); return; }
         let csv = '日期,類型,分類,金額,備註\n';
@@ -751,7 +716,6 @@
         link.click();
     }
 
-    // ---------- 匯入 CSV ----------
     function importCSV(file) {
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -779,7 +743,7 @@
         reader.readAsText(file);
     }
 
-    // ---------- 搜尋功能 ----------
+    // ---------- 搜尋 ----------
     function doSearch() {
         const kw = searchKeyword.value.trim().toLowerCase();
         const type = searchType.value;
@@ -805,7 +769,7 @@
         resultCount.textContent = results.length + ' 筆';
     }
 
-    // ---------- 主題切換 ----------
+    // ---------- 主題 ----------
     function setTheme(theme) {
         document.body.className = '';
         if (theme==='dark') document.body.classList.add('theme-dark');
@@ -816,20 +780,16 @@
 
     // ---------- 初始化 ----------
     function init() {
-        // 日期
         dateInput.value = todayStr();
         todayBadge.textContent = '今日 '+todayStr();
 
-        // 貨幣
         const savedCurrency = localStorage.getItem('dahui_currency') || '$';
         currencySymbol = savedCurrency;
         currencySelect.value = savedCurrency;
 
-        // 主題
         const savedTheme = localStorage.getItem('dahui_theme') || 'default';
         setTheme(savedTheme);
 
-        // 自訂分類
         const savedCats = localStorage.getItem('dahui_custom_cats');
         if (savedCats) {
             customCats.value = savedCats;
@@ -837,7 +797,7 @@
             updateCategoryDatalist();
         }
 
-        // 登入狀態監聽
+        // ---------- 登入狀態監聽 (含重定向結果處理) ----------
         auth.onAuthStateChanged(user => {
             if (user) {
                 currentUser = user;
@@ -858,34 +818,37 @@
             }
         });
 
-        // 登入/登出
+        // 處理重定向登入返回結果 (新增呢部分)
+        auth.getRedirectResult().catch(err => {
+            // 若錯誤可忽略或提示
+            console.warn('Redirect result error:', err);
+        });
+
+        // ---------- 登入/登出 (改用 Redirect) ----------
         authBtn.addEventListener('click', function() {
             if (currentUser) {
                 auth.signOut().catch(err => alert('登出失敗: '+err.message));
             } else {
                 const provider = new firebase.auth.GoogleAuthProvider();
-                auth.signInWithPopup(provider).catch(err => alert('登入失敗: '+err.message));
+                // 使用重定向方式 (避開 popup 封鎖)
+                auth.signInWithRedirect(provider);
             }
         });
 
-        // 主題切換 (按鈕)
+        // ---------- 其餘事件綁定 (同之前一樣) ----------
         themeToggle.addEventListener('click', function() {
             const next = { default:'dark', dark:'orange', orange:'default' };
             const current = themeSelect.value || 'default';
             setTheme(next[current] || 'default');
         });
-        themeSelect.addEventListener('change', function() {
-            setTheme(this.value);
-        });
+        themeSelect.addEventListener('change', function() { setTheme(this.value); });
 
-        // 貨幣
         currencySelect.addEventListener('change', function() {
             currencySymbol = this.value;
             localStorage.setItem('dahui_currency', currencySymbol);
             renderDashboard();
         });
 
-        // 儲存自訂分類
         saveCatsBtn.addEventListener('click', function() {
             const val = customCats.value.split(',').map(s=>s.trim()).filter(Boolean);
             if (val.length===0) { alert('請輸入至少一個分類'); return; }
@@ -900,7 +863,6 @@
             datalist.innerHTML = customCategoryList.map(c => `<option value="${c}">`).join('');
         }
 
-        // 月份切換
         prevMonthBtn.addEventListener('click', function() {
             let m=currentMonth-1, y=currentYear;
             if (m<1) { m=12; y--; }
@@ -916,10 +878,8 @@
             renderDashboard();
         });
 
-        // 新增記錄
         addBtn.addEventListener('click', function() { addEntry(true); });
         addAndNewBtn.addEventListener('click', function() { addEntry(false); });
-
         clearFormBtn.addEventListener('click', function() {
             amountInput.value = '';
             categoryInput.value = '';
@@ -929,7 +889,6 @@
             amountInput.focus();
         });
 
-        // 快速捷徑
         quickActions.addEventListener('click', function(e) {
             const btn = e.target.closest('button');
             if (!btn) return;
@@ -941,7 +900,6 @@
             }
         });
 
-        // 搜尋
         searchBtn.addEventListener('click', doSearch);
         clearSearchBtn.addEventListener('click', function() {
             searchKeyword.value = '';
@@ -953,13 +911,9 @@
             searchResults = [];
             renderDashboard();
         });
-        // 搜尋回車
         searchKeyword.addEventListener('keypress', e => { if(e.key==='Enter') doSearch(); });
 
-        // 匯出
         exportCsvBtn.addEventListener('click', exportCSV);
-
-        // 匯入
         csvFileInput.addEventListener('change', function(e) {
             if (this.files && this.files.length>0) {
                 importCSV(this.files[0]);
@@ -967,7 +921,6 @@
             }
         });
 
-        // 垃圾桶
         showTrashBtn.addEventListener('click', function() {
             renderTrashModal();
             trashModal.style.display = 'flex';
@@ -998,12 +951,10 @@
             });
         }
 
-        // 清空所有
         clearAllBtn.addEventListener('click', function() {
             if (!currentUser) { alert('請先登入'); return; }
             if (allEntries.length===0) return;
             if (confirm('⚠️ 確定刪除所有記錄？會移入垃圾桶。')) {
-                // 全部移入垃圾桶
                 const promises = allEntries.map(e => {
                     const trashId = generateId();
                     return trashRef.child(trashId).set({ ...e, deletedAt: Date.now() });
@@ -1014,18 +965,15 @@
             }
         });
 
-        // 按鍵快速加
         [amountInput, categoryInput, noteInput, dateInput].forEach(input => {
             input.addEventListener('keypress', function(e) {
                 if (e.key==='Enter') { e.preventDefault(); addEntry(true); }
             });
         });
 
-        // 初始化顯示
         renderDashboard();
     }
 
-    // 啟動
     document.addEventListener('DOMContentLoaded', init);
 })();
 </script>
