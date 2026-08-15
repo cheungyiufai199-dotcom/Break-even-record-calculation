@@ -12,8 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <style>
-        /* 同之前一樣嘅 style，為咗節省篇幅呢度省略，你用返原本嘅 style 就得 */
-        /* 如果懶，可以直接複製上面完整版嘅 style 貼落嚟 */
+        /* 同你之前一樣，冇改動 */
         * { margin:0; padding:0; box-sizing:border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
         body { background:#f5f7fb; padding:12px 10px 40px; display:flex; justify-content:center; min-height:100vh; }
         .app { max-width:500px; width:100%; }
@@ -96,13 +95,13 @@
         <span style="font-size:12px; color:var(--text-muted);">匿名版</span>
     </div>
 
-    <!-- 登入狀態欄（改為顯示匿名） -->
+    <!-- 登入狀態欄 -->
     <div class="auth-bar" id="authBar">
         <div class="user-info" id="userInfo">⏳ 連線中...</div>
         <button class="btn btn-outline btn-sm" id="themeToggle" title="轉主題">🎨</button>
     </div>
 
-    <!-- 分頁標籤（同之前一樣） -->
+    <!-- 分頁標籤 -->
     <div class="tabs" id="mainTabs">
         <button class="active" data-tab="tab1">📊 總覽</button>
         <button data-tab="tab2">✏️ 記賬</button>
@@ -286,7 +285,7 @@
 
 <script>
 // ============================================================
-//  大輝記賬 · 匿名登入版 (完全無需 Google)
+//  大輝記賬 · 匿名登入版 (修正錯誤處理)
 // ============================================================
 (function() {
     'use strict';
@@ -314,8 +313,7 @@
     let chartPie = null, chartLine = null;
     let searchResults = [];
 
-    // DOM refs (同之前一樣，為節省篇幅呢度省略，你直接複製上面完整嘅 DOM 變數就得)
-    // 但為咗完整，我照貼一次 (其實可以偷懶，但為咗確保用到，我照貼)
+    // DOM refs
     const $ = id => document.getElementById(id);
     const typeSelect = $('typeSelect');
     const categoryInput = $('categoryInput');
@@ -371,7 +369,7 @@
         return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
     }
     function formatDate(dateStr) { const p = dateStr.split('-'); return p[1]+'/'+p[2]; }
-    function formatCurrency(amount) { return currencySymbol + amount.toFixed(1); }
+    function formatCurrency(amount) { return currencySymbol + amount.toFixed(2); }
     function generateId() { return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
     function getMonthEntries(entries, year, month) {
         const prefix = year + '-' + String(month).padStart(2,'0');
@@ -383,7 +381,7 @@
         return { income: inc, expense: exp, balance: inc-exp };
     }
 
-    // ---------- 渲染 (同之前完全一樣) ----------
+    // ---------- 渲染 ----------
     function renderDashboard() {
         const monthEntries = getMonthEntries(allEntries, currentYear, currentMonth);
         const stats = calcStats(monthEntries);
@@ -540,7 +538,7 @@
         });
     }
 
-    // ---------- Firebase 監聽 (匿名登入後綁定) ----------
+    // ---------- Firebase 監聽 ----------
     function attachDatabaseListener(user) {
         if (dbRef) { dbRef.off(); }
         if (trashRef) { trashRef.off(); }
@@ -564,7 +562,7 @@
 
     // ---------- 核心操作 ----------
     function addEntry(clearAfter=true) {
-        if (!currentUser) { alert('未登入'); return; }
+        if (!currentUser) { alert('未登入，請等一陣再試'); return; }
         const type = typeSelect.value;
         let category = categoryInput.value.trim() || (type==='income'?'收入':'支出');
         const amount = parseFloat(amountInput.value);
@@ -697,16 +695,14 @@
         const savedCats = localStorage.getItem('dahui_custom_cats');
         if (savedCats) {
             customCats.value = savedCats;
-            // update datalist
             const datalist = document.getElementById('catSuggest');
             datalist.innerHTML = savedCats.split(',').map(s=>s.trim()).filter(Boolean).map(c => `<option value="${c}">`).join('');
         }
 
         // ---------- 自動匿名登入 ----------
-        auth.signInAnonymously().then(() => {
-            // 登入成功
-        }).catch(err => {
-            alert('匿名登入失敗: '+err.message);
+        auth.signInAnonymously().catch(err => {
+            console.error('匿名登入失敗:', err);
+            alert('匿名登入失敗：' + err.message + '\n請確認 Firebase 已啟用匿名登入。');
         });
 
         auth.onAuthStateChanged(user => {
