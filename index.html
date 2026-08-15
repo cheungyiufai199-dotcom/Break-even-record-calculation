@@ -284,7 +284,7 @@
 
 <script>
 // ============================================================
-//  大輝記賬 · 匿名登入版 (修復版:30日垃圾桶自動過期、大量刪除限流保護)
+//  大輝記賬 · 匿名登入版 (完整修復版)
 // ============================================================
 (function() {
     'use strict';
@@ -307,7 +307,6 @@
     let currentUser = null;
     let dbRef = null, trashRef = null;
     let allEntries = [], trashEntries = [];
-    // 修正：自動偵測而家年月
     const nowDate = new Date();
     let currentYear = nowDate.getFullYear();
     let currentMonth = nowDate.getMonth() + 1;
@@ -703,9 +702,37 @@
         themeSelect.value = theme;
     }
 
+    function renderTrashModal() {
+        if (!trashList) return;
+        if (trashEntries.length === 0) {
+            trashList.innerHTML = '<li class="empty-state">垃圾桶係空嘅</li>';
+            return;
+        }
+        let html = '';
+        trashEntries.forEach(item => {
+            const cls = item.type === 'income' ? 'income' : 'expense';
+            const sign = item.type === 'income' ? '+' : '-';
+            html += `<li style="padding:10px 0;border-bottom:1px solid var(--border);">
+                <div><strong>${item.category || ''}</strong> ${sign}${formatCurrency(item.amount)}</div>
+                <div class="text-muted">${formatDate(item.date)}｜刪除時間：${new Date(item.deletedAt).toLocaleString()}</div>
+                <div class="btn-group" style="margin-top:6px;">
+                    <button class="btn btn-primary btn-sm restore-btn" data-trashkey="${item.trashKey}">🔄 還原</button>
+                </div>
+            </li>`;
+        });
+        trashList.innerHTML = html;
+        document.querySelectorAll('.restore-btn').forEach(b => {
+            b.addEventListener('click', function () {
+                const key = this.dataset.trashkey;
+                restoreFromTrash(key);
+                trashModal.style.display = 'none';
+            });
+        });
+    }
+
     // ---------- 初始化 ----------
     function init() {
-        // Tab切換邏輯補充（原版遺漏）
+        // Tab切換
         document.querySelectorAll('#mainTabs button[data-tab]').forEach(tabBtn=>{
             tabBtn.addEventListener('click',()=>{
                 const targetTabId = tabBtn.dataset.tab;
@@ -730,7 +757,7 @@
             datalist.innerHTML = savedCats.split(',').map(s=>s.trim()).filter(Boolean).map(c => `<option value="${c}">`).join('');
         }
 
-        // ---------- 自動匿名登入 ----------
+        // 匿名登入
         auth.signInAnonymously().catch(err => {
             console.error('匿名登入失敗:', err);
             userInfo.innerHTML = '❌ 登入失敗';
@@ -755,7 +782,7 @@
             }
         });
 
-        // ---------- 事件綁定 ----------
+        // 事件綁定
         themeToggle.addEventListener('click', function() {
             const next = { default:'dark', dark:'orange', orange:'default' };
             const current = themeSelect.value || 'default';
@@ -791,6 +818,4 @@
             renderDashboard();
         });
 
-        addBtn.addEventListener('click', function() { addEntry(true); });
-        addAndNewBtn.addEventListener('click', function() { addEntry(false); });
-        clearFormBtn.addEventListener('
+        addBtn.addEventListener('click', function
