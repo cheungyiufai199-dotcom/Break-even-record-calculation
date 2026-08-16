@@ -10,28 +10,29 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
 <style>
-/* 全域強制黑色底色深色主題 */
+/* 預設白色底色為主，深色做切換模式 */
 *{margin:0;padding:0;box-sizing:border-box;font-family:"Microsoft JhengHei",PingFang TC,Noto Sans TC,sans-serif;}
-body{background:#0a0a0a;color:#f0f0f0;min-height:100vh;padding:15px;transition:background 0.3s,color 0.3s;}
-.light-mode{background:#ffffff;color:#111111;}
+body{background:#ffffff;color:#111111;min-height:100vh;padding:15px;transition:background 0.3s,color 0.3s;}
+.dark-mode{background:#0a0a0a;color:#f0f0f0;}
 .container{max-width:750px;margin:0 auto;}
-.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:15px;border-bottom:1px solid #333;}
-.light-mode .header{border-bottom:1px solid #ddd;}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:15px;border-bottom:1px solid #ddd;}
+.dark-mode .header{border-bottom:1px solid #333;}
 .btn{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:15px;margin:3px;}
 .btn-google{background:#4285f4;color:#fff;}
 .btn-logout{background:#d93025;color:#fff;display:none;}
-.btn-theme{background:#444;color:#fff;}
-.light-mode .btn-theme{background:#eee;color:#111;}
-.card{background:#181818;border-radius:10px;padding:18px;margin-bottom:15px;border:1px solid #272727;}
-.light-mode .card{background:#f8f8f8;border:1px solid #e5e5e5;}
+.btn-theme{background:#222;color:#fff;}
+.dark-mode .btn-theme{background:#eee;color:#111;}
+.btn-voice{background:#239673;color:#fff;}
+.card{background:#f8f8f8;border-radius:10px;padding:18px;margin-bottom:15px;border:1px solid #e5e5e5;}
+.dark-mode .card{background:#181818;border:1px solid #272727;}
 .form-item{margin:12px 0;}
 label{display:block;margin-bottom:6px;}
-input,select{width:100%;padding:10px;border-radius:6px;background:#222;border:1px solid #3a3a3a;color:#fff;font-size:15px;}
-.light-mode input,.light-mode select{background:#fff;border:#ccc;color:#111;}
+input,select{width:100%;padding:10px;border-radius:6px;background:#fff;border:1px solid #ccc;color:#111;font-size:15px;}
+.dark-mode input,.dark-mode select{background:#222;border:1px solid #3a3a3a;color:#fff;}
 .operate-bar{margin:15px 0;display:flex;flex-wrap:wrap;gap:8px;}
 .chart-box{height:320px;margin:20px 0;}
-.list-item{padding:10px;border-bottom:1px solid #2a2a2a;display:flex;justify-content:space-between;}
-.light-mode .list-item{border-bottom:1px solid #eee;}
+.list-item{padding:10px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;}
+.dark-mode .list-item{border-bottom:1px solid #2a2a2a;}
 .loading{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;z-index:9999;display:none;}
 .tip-popup{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:6px;background:#222;color:#fff;z-index:9998;display:none;}
 </style>
@@ -45,13 +46,17 @@ input,select{width:100%;padding:10px;border-radius:6px;background:#222;border:1p
     <div>
       <button class="btn btn-google" id="loginBtn">Google帳號登入</button>
       <button class="btn btn-logout" id="logoutBtn">登出帳號</button>
-      <button class="btn btn-theme" id="themeBtn">切換主題</button>
+      <button class="btn btn-theme" id="themeBtn">切換黑白主題</button>
     </div>
   </div>
 
-  <!-- 新增收支表單 -->
+  <!-- 新增收支表單 + 語音輸入按鈕 -->
   <div class="card" id="addBillBox" style="display:none;">
     <h3>新增收支記錄</h3>
+    <div style="margin:10px 0;">
+      <button class="btn btn-voice" id="voiceInputBtn">🎤 語音輸入記帳</button>
+      <span style="font-size:13px;margin-left:8px;">示範語句：今日餐飲支出50蚊、工資收入8000</span>
+    </div>
     <div class="form-item">
       <label>類型</label>
       <select id="billType">
@@ -119,6 +124,7 @@ const tipBox = document.getElementById('tipBox');
 const loginBtn = document.getElementById('loginBtn');
 const logoutBtn = document.getElementById('logoutBtn');
 const themeBtn = document.getElementById('themeBtn');
+const voiceInputBtn = document.getElementById('voiceInputBtn');
 const addBillBox = document.getElementById('addBillBox');
 const chartBox = document.getElementById('chartBox');
 const listBox = document.getElementById('listBox');
@@ -135,9 +141,67 @@ function setLoading(show){
   loading.style.display = show ? 'flex' : 'none';
 }
 
-// 主題切換
+// 黑白主題切換（預設白色，點掣轉深色）
 themeBtn.addEventListener('click',()=>{
-  document.body.classList.toggle('light-mode');
+  document.body.classList.toggle('dark-mode');
+  // 重新渲染圖表配色
+  if(currentUser) loadBillData();
+});
+
+// ========== 語音輸入模組 ==========
+let voiceRecognition = null;
+if(window.SpeechRecognition || window.webkitSpeechRecognition){
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  voiceRecognition = new SpeechRecognition();
+  voiceRecognition.lang = 'zh-HK'; // 支援廣東話識別
+  voiceRecognition.interimResults = false;
+
+  // 語音識別完畢解析文字
+  voiceRecognition.onresult = (e)=>{
+    const text = e.results[0][0].transcript;
+    analyseVoiceText(text);
+  };
+
+  voiceRecognition.onerror = ()=>{
+    showTip('語音識別失敗，請檢查瀏覽器咪高峰權限');
+  };
+}
+
+// 解析語音文字，自動填入表單
+function analyseVoiceText(text){
+  let type = 'pay';
+  let money = 0;
+  let classify = '其他';
+  let remark = text;
+
+  // 判斷收入/支出
+  if(text.includes('收入') || text.includes('賺') || text.includes('工資')){
+    type = 'income';
+  }
+  document.getElementById('billType').value = type;
+
+  // 提取數字金額
+  const numArr = text.match(/\d+/);
+  if(numArr) money = parseInt(numArr[0]);
+  document.getElementById('billMoney').value = money;
+
+  // 自動匹配分類
+  if(text.includes('餐') || text.includes('飯') || text.includes('飲食')) classify = '飲食';
+  else if(text.includes('車') || text.includes('交通') || text.includes('地鐵')) classify = '交通';
+  else if(text.includes('買') || text.includes('購物')) classify = '購物';
+  else if(text.includes('工資') || text.includes('薪金')) classify = '工資';
+  document.getElementById('billClass').value = classify;
+
+  document.getElementById('billRemark').value = text;
+  showTip('語音解析完成，請確認內容再儲存');
+}
+
+// 點擊開始錄音
+voiceInputBtn.addEventListener('click',()=>{
+  if(!voiceRecognition) return showTip('你嘅瀏覽器唔支援語音輸入功能');
+  if(!currentUser) return showTip('請先登入Google帳號');
+  voiceRecognition.start();
+  showTip('而家可以講記帳內容啦');
 });
 
 // Google登入流程
@@ -170,7 +234,6 @@ auth.onAuthStateChanged(user=>{
   setLoading(false);
   currentUser = user;
   if(user){
-    // 已登入：切換按鈕、顯示功能介面
     loginBtn.style.display = 'none';
     logoutBtn.style.display = 'inline-block';
     addBillBox.style.display = 'block';
@@ -178,7 +241,6 @@ auth.onAuthStateChanged(user=>{
     listBox.style.display = 'block';
     loadBillData();
   }else{
-    // 未登入：隱藏全部功能
     loginBtn.style.display = 'inline-block';
     logoutBtn.style.display = 'none';
     addBillBox.style.display = 'none';
@@ -210,6 +272,94 @@ document.getElementById('submitBill').addEventListener('click',async ()=>{
       remark:remark,
       time:new Date().getTime(),
       dateStr:new Date().toLocaleString('zh-HK')
+    };
+    await db.ref('bills/'+uid).push(newBill);
+    document.getElementById('billMoney').value = '';
+    document.getElementById('billRemark').value = '';
+    showTip('記錄儲存成功');
+    loadBillData();
+  }catch(err){
+    showTip('儲存失敗，檢查資料庫權限：'+err.message);
+    console.error(err);
+  }finally{
+    setLoading(false);
+  }
+});
+
+// 載入用戶帳單數據並渲染清單+圖表
+async function loadBillData(){
+  if(!currentUser) return;
+  setLoading(true);
+  try{
+    const snapshot = await db.ref('bills/'+currentUser.uid).orderByChild('time').once('value');
+    const bills = [];
+    snapshot.forEach(item=>{
+      bills.push({id:item.key,...item.val()});
+    });
+    renderList(bills);
+    renderChart(bills);
+  }catch(err){
+    showTip('讀取數據失敗，Firebase連線/權限異常：'+err.message);
+    console.error(err);
+  }finally{
+    setLoading(false);
+  }
+}
+
+// 渲染明細清單
+function renderList(bills){
+  const wrap = document.getElementById('billList');
+  if(bills.length ===0){
+    wrap.innerHTML = '<div style="padding:10px;text-align:center;">暫無收支記錄</div>';
+    return;
+  }
+  let html = '';
+  bills.reverse().forEach(item=>{
+    const sign = item.type === 'income' ? '+' : '-';
+    const color = item.type === 'income' ? '#099441' : '#e02424';
+    html += `
+    <div class="list-item">
+      <div>
+        <div>${item.dateStr}｜${item.classify}｜${item.remark||'無備註'}</div>
+      </div>
+      <div style="color:${color};font-weight:bold;">${sign}$${item.money.toFixed(2)}</div>
+    </div>`;
+  });
+  wrap.innerHTML = html;
+}
+
+// 繪製統計圖表，自動跟隨主題切換文字顏色
+function renderChart(bills){
+  if(chartInstance) chartInstance.destroy();
+  let totalIncome = 0, totalPay =0;
+  bills.forEach(item=>{
+    if(item.type === 'income') totalIncome += item.money;
+    else totalPay += item.money;
+  });
+
+  const ctx = document.getElementById('myChart').getContext('2d');
+  const isDark = document.body.classList.contains('dark-mode');
+  const textColor = isDark ? '#eee' : '#111';
+
+  chartInstance = new Chart(ctx,{
+    type:'doughnut',
+    data:{
+      labels:['總收入','總支出'],
+      datasets:[{
+        data:[totalIncome,totalPay],
+        backgroundColor:['#36d399','#f87272']
+      }]
+    },
+    options:{
+      plugins:{
+        legend:{labels:{color:textColor}}
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
     };
     await db.ref('bills/'+uid).push(newBill);
     // 清空輸入框
