@@ -4,13 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>個人專屬記帳系統</title>
-<!-- Firebase 相容版SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
 <style>
-/* 預設白色底色為主，深色做切換模式 */
 *{margin:0;padding:0;box-sizing:border-box;font-family:"Microsoft JhengHei",PingFang TC,Noto Sans TC,sans-serif;}
 body{background:#ffffff;color:#111111;min-height:100vh;padding:15px;transition:background 0.3s,color 0.3s;}
 .dark-mode{background:#0a0a0a;color:#f0f0f0;}
@@ -50,7 +48,6 @@ input,select{width:100%;padding:10px;border-radius:6px;background:#fff;border:1p
     </div>
   </div>
 
-  <!-- 新增收支表單 + 語音輸入按鈕 -->
   <div class="card" id="addBillBox" style="display:none;">
     <h3>新增收支記錄</h3>
     <div style="margin:10px 0;">
@@ -85,7 +82,6 @@ input,select{width:100%;padding:10px;border-radius:6px;background:#fff;border:1p
     <button class="btn" style="background:#28a745;color:#fff;width:100%;margin-top:10px;" id="submitBill">儲存記錄</button>
   </div>
 
-  <!-- 數據統計圖表 -->
   <div class="card" id="chartBox" style="display:none;">
     <h3>本月收支統計</h3>
     <div class="chart-box">
@@ -93,7 +89,6 @@ input,select{width:100%;padding:10px;border-radius:6px;background:#fff;border:1p
     </div>
   </div>
 
-  <!-- 記錄清單 -->
   <div class="card" id="listBox" style="display:none;">
     <h3>收支明細清單</h3>
     <div id="billList"></div>
@@ -101,8 +96,250 @@ input,select{width:100%;padding:10px;border-radius:6px;background:#fff;border:1p
 </div>
 
 <script>
-// Firebase 配置資訊
 const firebaseConfig = {
+  apiKey: "AIzaSyCnToMYsM7pIGeGHLt5xFbQfT5RAIWzTQA",
+  authDomain: "van-v9-41439.firebaseapp.com",
+  databaseURL: "https://van-v9-41439-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "van-v9-41439",
+  storageBucket: "van-v9-41439.firebasestorage.app",
+  messagingSenderId: "434512345678"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+let currentUser = null;
+let chartInstance = null;
+
+const loading = document.getElementById('loading');
+const tipBox = document.getElementById('tipBox');
+const loginBtn = document.getElementById('loginBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const themeBtn = document.getElementById('themeBtn');
+const voiceInputBtn = document.getElementById('voiceInputBtn');
+const addBillBox = document.getElementById('addBillBox');
+const chartBox = document.getElementById('chartBox');
+const listBox = document.getElementById('listBox');
+
+function showTip(msg, time=2000){
+  tipBox.innerText = msg;
+  tipBox.style.display = 'block';
+  setTimeout(()=>{tipBox.style.display='none'}, time);
+}
+
+function setLoading(show){
+  loading.style.display = show ? 'flex' : 'none';
+}
+
+themeBtn.addEventListener('click',()=>{
+  document.body.classList.toggle('dark-mode');
+  if(currentUser) loadBillData();
+});
+
+let voiceRecognition = null;
+if(window.SpeechRecognition || window.webkitSpeechRecognition){
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  voiceRecognition = new SpeechRecognition();
+  voiceRecognition.lang = 'zh-HK';
+  voiceRecognition.interimResults = false;
+
+  voiceRecognition.onresult = (e)=>{
+    const text = e.results[0][0].transcript;
+    analyseVoiceText(text);
+  };
+
+  voiceRecognition.onerror = ()=>{
+    showTip('語音識別失敗，請開啟瀏覽器咪高峰權限');
+  };
+}
+
+function analyseVoiceText(text){
+  let type = 'pay';
+  let money = 0;
+  let classify = '其他';
+  let remark = text;
+
+  if(text.includes('收入') || text.includes('賺') || text.includes('工資')){
+    type = 'income';
+  }
+  document.getElementById('billType').value = type;
+
+  const numArr = text.match(/\d+/);
+  if(numArr) money = parseInt(numArr[0]);
+  document.getElementById('billMoney').value = money;
+
+  if(text.includes('餐') || text.includes('飯') || text.includes('飲食')) classify = '飲食';
+  else if(text.includes('車') || text.includes('交通') || text.includes('地鐵')) classify = '交通';
+  else if(text.includes('買') || text.includes('購物')) classify = '購物';
+  else if(text.includes('工資') || text.includes('薪金')) classify = '工資';
+  document.getElementById('billClass').value = classify;
+
+  document.getElementById('billRemark').value = text;
+  showTip('語音解析完成，請確認內容再儲存');
+}
+
+voiceInputBtn.addEventListener('click',()=>{
+  if(!voiceRecognition) return showTip('當前瀏覽器唔支援語音輸入功能');
+  if(!currentUser) return showTip('請先完成Google帳號登入');
+  voiceRecognition.start();
+  showTip('請口述記帳內容');
+});
+
+loginBtn.addEventListener('click',async ()=>{
+  setLoading(true);
+  try{
+    const provider = new firebase.auth.GoogleAuthProvider();
+    await auth.signInWithPopup(provider);
+  }catch(err){
+    setLoading(false);
+    if(err.code === 'auth/popup-blocked'){
+      showTip('登入彈窗被瀏覽器阻擋，請關閉廣告攔截插件再試');
+    }else if(err.code === 'auth/unauthorized-domain'){
+      showTip('Firebase後台未加入網域白名單，需要手動新增Pages網址');
+    }else{
+      showTip('登入失敗：'+err.message);
+    }
+    console.error('登入錯誤',err);
+  }
+});
+
+logoutBtn.addEventListener('click',async ()=>{
+  setLoading(true);
+  try{
+    await auth.signOut();
+    showTip('帳號已成功登出');
+  }catch(err){
+    setLoading(false);
+    showTip('登出異常：'+err.message);
+  }
+});
+
+auth.onAuthStateChanged(user=>{
+  setLoading(false);
+  currentUser = user;
+  if(user){
+    loginBtn.style.display = 'none';
+    logoutBtn.style.display = 'inline-block';
+    addBillBox.style.display = 'block';
+    chartBox.style.display = 'block';
+    listBox.style.display = 'block';
+    loadBillData();
+  }else{
+    loginBtn.style.display = 'inline-block';
+    logoutBtn.style.display = 'none';
+    addBillBox.style.display = 'none';
+    chartBox.style.display = 'none';
+    listBox.style.display = 'none';
+    currentUser = null;
+    if(chartInstance) chartInstance.destroy();
+  }
+});
+
+document.getElementById('submitBill').addEventListener('click',async ()=>{
+  if(!currentUser) return showTip('請先登入Google帳號');
+  const type = document.getElementById('billType').value;
+  const money = parseFloat(document.getElementById('billMoney').value);
+  const cls = document.getElementById('billClass').value;
+  const remark = document.getElementById('billRemark').value.trim();
+
+  if(isNaN(money) || money <=0) return showTip('請填寫有效金額數字');
+  setLoading(true);
+
+  try{
+    const uid = currentUser.uid;
+    const newBill = {
+      uid:uid,
+      type:type,
+      money:money,
+      classify:cls,
+      remark:remark,
+      time:new Date().getTime(),
+      dateStr:new Date().toLocaleString('zh-HK')
+    };
+    await db.ref('bills/'+uid).push(newBill);
+    document.getElementById('billMoney').value = '';
+    document.getElementById('billRemark').value = '';
+    showTip('收支記錄儲存完畢');
+    loadBillData();
+  }catch(err){
+    showTip('儲存失敗，檢查Firebase資料庫權限：'+err.message);
+    console.error(err);
+  }finally{
+    setLoading(false);
+  }
+});
+
+async function loadBillData(){
+  if(!currentUser) return;
+  setLoading(true);
+  try{
+    const snapshot = await db.ref('bills/'+currentUser.uid).orderByChild('time').once('value');
+    const bills = [];
+    snapshot.forEach(item=>{
+      bills.push({id:item.key,...item.val()});
+    });
+    renderList(bills);
+    renderChart(bills);
+  }catch(err){
+    showTip('讀取帳單數據失敗，網絡或權限異常');
+    console.error(err);
+  }finally{
+    setLoading(false);
+  }
+}
+
+function renderList(bills){
+  const wrap = document.getElementById('billList');
+  if(bills.length ===0){
+    wrap.innerHTML = '<div style="padding:10px;text-align:center;">暫無任何收支記錄</div>';
+    return;
+  }
+  let html = '';
+  bills.reverse().forEach(item=>{
+    const sign = item.type === 'income' ? '+' : '-';
+    const color = item.type === 'income' ? '#099441' : '#e02424';
+    html += `
+    <div class="list-item">
+      <div>
+        <div>${item.dateStr}｜${item.classify}｜${item.remark||'無備註'}</div>
+      </div>
+      <div style="color:${color};font-weight:bold;">${sign}$${item.money.toFixed(2)}</div>
+    </div>`;
+  });
+  wrap.innerHTML = html;
+}
+
+function renderChart(bills){
+  if(chartInstance) chartInstance.destroy();
+  let totalIncome = 0, totalPay =0;
+  bills.forEach(item=>{
+    if(item.type === 'income') totalIncome += item.money;
+    else totalPay += item.money;
+  });
+
+  const ctx = document.getElementById('myChart').getContext('2d');
+  const isDark = document.body.classList.contains('dark-mode');
+  const textColor = isDark ? '#eee' : '#111';
+
+  chartInstance = new Chart(ctx,{
+    type:'doughnut',
+    data:{
+      labels:['總收入','總支出'],
+      datasets:[{
+        data:[totalIncome,totalPay],
+        backgroundColor:['#36d399','#f87272']
+      }]
+    },
+    options:{
+      plugins:{
+        legend:{labels:{color:textColor}}
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
   apiKey: "AIzaSyCnToMYsM7pIGeGHLt5xFbQfT5RAIWzTQA",
   authDomain: "van-v9-41439.firebaseapp.com",
   databaseURL: "https://van-v9-41439-default-rtdb.asia-southeast1.firebasedatabase.app",
