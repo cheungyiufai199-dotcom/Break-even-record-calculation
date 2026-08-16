@@ -1,108 +1,304 @@
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
-    <title>大輝記賬 · 匿名版</title>
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
-    <style>
-        * { margin:0; padding:0; box-sizing:border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
-        body { background:#f5f7fb; padding:12px 10px 40px; display:flex; justify-content:center; min-height:100vh; }
-        .app { max-width:500px; width:100%; }
-        :root { --primary:#4f46e5; --primary-light:#818cf8; --primary-bg:#eef2ff; --card-bg:#ffffff; --text-main:#0f172a; --text-muted:#64748b; --border:#e2e8f0; --shadow:0 4px 14px rgba(0,0,0,0.04); --radius:24px; }
-        .theme-dark { --primary:#6b63ff; --primary-light:#9aa2ff; --primary-bg:#2d2a4a; --card-bg:#1e1e2f; --text-main:#e2e8f0; --text-muted:#94a3b8; --border:#334155; --shadow:0 4px 14px rgba(0,0,0,0.3); background:#111827; }
-        .theme-orange { --primary:#e67e22; --primary-light:#f39c12; --primary-bg:#fdebd0; --card-bg:#ffffff; --text-main:#1e293b; --text-muted:#64748b; --border:#f0d5b0; }
-        .card { background:var(--card-bg); border-radius:var(--radius); padding:18px 16px; margin-bottom:16px; box-shadow:var(--shadow); }
-        .card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:6px; }
-        .card-header h2 { font-size:17px; font-weight:600; color:var(--text-main); }
-        .card-header .badge { background:var(--primary-bg); color:var(--primary); font-size:12px; font-weight:500; padding:3px 12px; border-radius:30px; }
-        .form-row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
-        .form-row .field { flex:1 0 calc(50% - 8px); min-width:110px; }
-        .form-row .field.full { flex:1 0 100%; }
-        label { display:block; font-size:12px; font-weight:500; color:var(--text-muted); margin-bottom:3px; }
-        input, select, textarea, button { width:100%; padding:10px 12px; border-radius:14px; border:1px solid var(--border); background:var(--card-bg); font-size:14px; color:var(--text-main); outline:none; transition:0.2s; }
-        input:focus, select:focus, textarea:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(79,70,229,0.12); }
-        textarea { resize:vertical; min-height:44px; }
-        .btn { border:none; font-weight:600; cursor:pointer; padding:10px 14px; border-radius:40px; font-size:14px; transition:0.15s; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
-        .btn-primary { background:var(--primary); color:#fff; box-shadow:0 4px 10px rgba(79,70,229,0.2); }
-        .btn-primary:active { transform:scale(0.96); }
-        .btn-danger { background:#fee2e2; color:#b91c1c; }
-        .btn-outline { background:transparent; border:1px solid var(--border); color:var(--text-main); }
-        .btn-sm { padding:5px 14px; font-size:12px; }
-        .btn-group { display:flex; gap:8px; flex-wrap:wrap; }
-        .btn-group .btn { flex:1; }
-        .auth-bar { display:flex; align-items:center; gap:10px; background:var(--card-bg); border-radius:40px; padding:8px 14px; margin-bottom:14px; box-shadow:var(--shadow); }
-        .auth-bar .user-info { flex:1; font-size:13px; color:var(--text-main); }
-        .stats-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; text-align:center; }
-        .stat-item { background:#f8fafc; border-radius:16px; padding:10px 4px; }
-        .stat-item .num { font-size:20px; font-weight:700; }
-        .stat-item .label { font-size:11px; color:var(--text-muted); }
-        .income-num { color:#0b8a5e; }
-        .expense-num { color:#b91c1c; }
-        .balance-num { color:var(--text-main); }
-        .month-selector { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-        .month-selector button { width:auto; padding:4px 14px; background:var(--primary-bg); border:none; border-radius:30px; font-size:18px; cursor:pointer; color:var(--primary); }
-        .month-selector .month-label { font-weight:600; font-size:16px; color:var(--text-main); flex:1; text-align:center; }
-        .entry-list { list-style:none; max-height:400px; overflow-y:auto; }
-        .entry-list li { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border); }
-        .entry-list li:last-child { border-bottom:none; }
-        .entry-info { display:flex; flex-direction:column; gap:1px; flex:1; }
-        .entry-cat { font-weight:500; color:var(--text-main); }
-        .entry-meta { font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-        .entry-meta .tag { background:var(--primary-bg); color:var(--primary); padding:0 10px; border-radius:30px; font-size:10px; font-weight:500; }
-        .entry-amount { font-weight:600; font-size:15px; }
-        .entry-amount.income { color:#0b8a5e; }
-        .entry-amount.expense { color:#b91c1c; }
-        .del-btn { background:none; border:none; color:#cbd5e1; font-size:16px; cursor:pointer; padding:4px 6px; border-radius:20px; }
-        .del-btn:active { background:#fee2e2; color:#b91c1c; }
-        .empty-state { text-align:center; color:var(--text-muted); padding:30px 0 16px; font-size:14px; }
-        .chart-container { position:relative; height:180px; margin:6px 0 10px; }
-        .budget-item { display:flex; align-items:center; gap:8px; margin:6px 0; }
-        .budget-item .b-label { min-width:70px; font-size:13px; font-weight:500; color:var(--text-main); }
-        .budget-item .b-bar { flex:1; height:8px; background:#e2e8f0; border-radius:10px; overflow:hidden; }
-        .budget-item .b-bar .b-fill { height:100%; border-radius:10px; background:var(--primary); transition:0.3s; }
-        .budget-item .b-bar .b-fill.warning { background:#f59e0b; }
-        .budget-item .b-bar .b-fill.danger { background:#ef4444; }
-        .budget-item .b-text { font-size:12px; color:var(--text-muted); min-width:70px; text-align:right; }
-        .search-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
-        .search-row input, .search-row select { flex:1; min-width:90px; padding:8px 12px; font-size:13px; }
-        .tabs { display:flex; gap:4px; background:var(--card-bg); border-radius:40px; padding:4px; margin-bottom:14px; box-shadow:var(--shadow); }
-        .tabs button { flex:1; border:none; background:transparent; padding:8px 6px; border-radius:30px; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; transition:0.2s; }
-        .tabs button.active { background:var(--primary); color:#fff; box-shadow:0 2px 8px rgba(79,70,229,0.2); }
-        .tab-content { display:none; }
-        .tab-content.active { display:block; }
-        .flex-between { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; }
-        .mt-2 { margin-top:12px; }
-        .text-center { text-align:center; }
-        .text-muted { color:var(--text-muted); font-size:13px; }
-        .disabled-overlay { position:relative; }
-        .disabled-overlay::after { content:''; position:absolute; inset:0; background:rgba(255,255,255,0.5); border-radius:var(--radius); pointer-events:none; }
-        .theme-dark .disabled-overlay::after { background:rgba(0,0,0,0.4); }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>個人專屬記帳系統</title>
+<!-- Firebase 相容版SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+<style>
+/* 全域強制黑色底色深色主題 */
+*{margin:0;padding:0;box-sizing:border-box;font-family:"Microsoft JhengHei",PingFang TC,Noto Sans TC,sans-serif;}
+body{background:#0a0a0a;color:#f0f0f0;min-height:100vh;padding:15px;transition:background 0.3s,color 0.3s;}
+.light-mode{background:#ffffff;color:#111111;}
+.container{max-width:750px;margin:0 auto;}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:15px;border-bottom:1px solid #333;}
+.light-mode .header{border-bottom:1px solid #ddd;}
+.btn{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:15px;margin:3px;}
+.btn-google{background:#4285f4;color:#fff;}
+.btn-logout{background:#d93025;color:#fff;display:none;}
+.btn-theme{background:#444;color:#fff;}
+.light-mode .btn-theme{background:#eee;color:#111;}
+.card{background:#181818;border-radius:10px;padding:18px;margin-bottom:15px;border:1px solid #272727;}
+.light-mode .card{background:#f8f8f8;border:1px solid #e5e5e5;}
+.form-item{margin:12px 0;}
+label{display:block;margin-bottom:6px;}
+input,select{width:100%;padding:10px;border-radius:6px;background:#222;border:1px solid #3a3a3a;color:#fff;font-size:15px;}
+.light-mode input,.light-mode select{background:#fff;border:#ccc;color:#111;}
+.operate-bar{margin:15px 0;display:flex;flex-wrap:wrap;gap:8px;}
+.chart-box{height:320px;margin:20px 0;}
+.list-item{padding:10px;border-bottom:1px solid #2a2a2a;display:flex;justify-content:space-between;}
+.light-mode .list-item{border-bottom:1px solid #eee;}
+.loading{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;z-index:9999;display:none;}
+.tip-popup{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:6px;background:#222;color:#fff;z-index:9998;display:none;}
+</style>
 </head>
 <body>
-<div class="app" id="app">
-
-    <div class="flex-between" style="margin-bottom:6px;">
-        <span style="font-size:24px; font-weight:700; color:var(--text-main);">📒 大輝記賬</span>
-        <span style="font-size:12px; color:var(--text-muted);">匿名版</span>
+<div class="loading" id="loading">系統載入中，請稍候……</div>
+<div class="tip-popup" id="tipBox"></div>
+<div class="container">
+  <div class="header">
+    <h2>個人記帳系統</h2>
+    <div>
+      <button class="btn btn-google" id="loginBtn">Google帳號登入</button>
+      <button class="btn btn-logout" id="logoutBtn">登出帳號</button>
+      <button class="btn btn-theme" id="themeBtn">切換主題</button>
     </div>
+  </div>
 
-    <!-- 登入狀態欄 -->
-    <div class="auth-bar" id="authBar">
-        <div class="user-info" id="userInfo">⏳ 連線中...</div>
-        <button class="btn btn-outline btn-sm" id="themeToggle" title="轉主題">🎨</button>
+  <!-- 新增收支表單 -->
+  <div class="card" id="addBillBox" style="display:none;">
+    <h3>新增收支記錄</h3>
+    <div class="form-item">
+      <label>類型</label>
+      <select id="billType">
+        <option value="income">收入</option>
+        <option value="pay">支出</option>
+      </select>
     </div>
+    <div class="form-item">
+      <label>金額</label>
+      <input type="number" id="billMoney" placeholder="輸入數字金額" min="0" step="0.01">
+    </div>
+    <div class="form-item">
+      <label>分類</label>
+      <select id="billClass">
+        <option value="飲食">飲食</option>
+        <option value="交通">交通</option>
+        <option value="購物">購物</option>
+        <option value="工資">工資</option>
+        <option value="其他">其他</option>
+      </select>
+    </div>
+    <div class="form-item">
+      <label>備註</label>
+      <input type="text" id="billRemark" placeholder="簡單備註說明">
+    </div>
+    <button class="btn" style="background:#28a745;color:#fff;width:100%;margin-top:10px;" id="submitBill">儲存記錄</button>
+  </div>
 
-    <!-- 分頁標籤 -->
-    <div class="tabs" id="mainTabs">
-        <button class="active" data-tab="tab1">📊 總覽</button>
+  <!-- 數據統計圖表 -->
+  <div class="card" id="chartBox" style="display:none;">
+    <h3>本月收支統計</h3>
+    <div class="chart-box">
+      <canvas id="myChart"></canvas>
+    </div>
+  </div>
+
+  <!-- 記錄清單 -->
+  <div class="card" id="listBox" style="display:none;">
+    <h3>收支明細清單</h3>
+    <div id="billList"></div>
+  </div>
+</div>
+
+<script>
+// Firebase 配置資訊
+const firebaseConfig = {
+  apiKey: "AIzaSyCnToMYsM7pIGeGHLt5xFbQfT5RAIWzTQA",
+  authDomain: "van-v9-41439.firebaseapp.com",
+  databaseURL: "https://van-v9-41439-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "van-v9-41439",
+  storageBucket: "van-v9-41439.firebasestorage.app",
+  messagingSenderId: "434512345678"
+};
+
+// 初始化Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+let currentUser = null;
+let chartInstance = null;
+
+// DOM物件
+const loading = document.getElementById('loading');
+const tipBox = document.getElementById('tipBox');
+const loginBtn = document.getElementById('loginBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const themeBtn = document.getElementById('themeBtn');
+const addBillBox = document.getElementById('addBillBox');
+const chartBox = document.getElementById('chartBox');
+const listBox = document.getElementById('listBox');
+
+// 彈窗提示函數
+function showTip(msg, time=2000){
+  tipBox.innerText = msg;
+  tipBox.style.display = 'block';
+  setTimeout(()=>{tipBox.style.display='none'}, time);
+}
+
+// 載入顯示控制
+function setLoading(show){
+  loading.style.display = show ? 'flex' : 'none';
+}
+
+// 主題切換
+themeBtn.addEventListener('click',()=>{
+  document.body.classList.toggle('light-mode');
+});
+
+// Google登入流程
+loginBtn.addEventListener('click',async ()=>{
+  setLoading(true);
+  try{
+    const provider = new firebase.auth.GoogleAuthProvider();
+    await auth.signInWithPopup(provider);
+  }catch(err){
+    setLoading(false);
+    showTip('登入失敗：'+err.message);
+    console.error('登入錯誤',err);
+  }
+});
+
+// 登出
+logoutBtn.addEventListener('click',async ()=>{
+  setLoading(true);
+  try{
+    await auth.signOut();
+    showTip('已成功登出');
+  }catch(err){
+    setLoading(false);
+    showTip('登出異常：'+err.message);
+  }
+});
+
+// 監測登入狀態
+auth.onAuthStateChanged(user=>{
+  setLoading(false);
+  currentUser = user;
+  if(user){
+    // 已登入：切換按鈕、顯示功能介面
+    loginBtn.style.display = 'none';
+    logoutBtn.style.display = 'inline-block';
+    addBillBox.style.display = 'block';
+    chartBox.style.display = 'block';
+    listBox.style.display = 'block';
+    loadBillData();
+  }else{
+    // 未登入：隱藏全部功能
+    loginBtn.style.display = 'inline-block';
+    logoutBtn.style.display = 'none';
+    addBillBox.style.display = 'none';
+    chartBox.style.display = 'none';
+    listBox.style.display = 'none';
+    currentUser = null;
+    if(chartInstance) chartInstance.destroy();
+  }
+});
+
+// 儲存收支記錄
+document.getElementById('submitBill').addEventListener('click',async ()=>{
+  if(!currentUser) return showTip('請先登入Google帳號');
+  const type = document.getElementById('billType').value;
+  const money = parseFloat(document.getElementById('billMoney').value);
+  const cls = document.getElementById('billClass').value;
+  const remark = document.getElementById('billRemark').value.trim();
+
+  if(isNaN(money) || money <=0) return showTip('請輸入正確金額');
+  setLoading(true);
+
+  try{
+    const uid = currentUser.uid;
+    const newBill = {
+      uid:uid,
+      type:type,
+      money:money,
+      classify:cls,
+      remark:remark,
+      time:new Date().getTime(),
+      dateStr:new Date().toLocaleString('zh-HK')
+    };
+    await db.ref('bills/'+uid).push(newBill);
+    // 清空輸入框
+    document.getElementById('billMoney').value = '';
+    document.getElementById('billRemark').value = '';
+    showTip('記錄儲存成功');
+    loadBillData();
+  }catch(err){
+    showTip('儲存失敗，檢查資料庫權限：'+err.message);
+    console.error(err);
+  }finally{
+    setLoading(false);
+  }
+});
+
+// 載入用戶帳單數據並渲染清單+圖表
+async function loadBillData(){
+  if(!currentUser) return;
+  setLoading(true);
+  try{
+    const snapshot = await db.ref('bills/'+currentUser.uid).orderByChild('time').once('value');
+    const bills = [];
+    snapshot.forEach(item=>{
+      bills.push({id:item.key,...item.val()});
+    });
+    renderList(bills);
+    renderChart(bills);
+  }catch(err){
+    showTip('讀取數據失敗，Firebase連線/權限異常：'+err.message);
+    console.error(err);
+  }finally{
+    setLoading(false);
+  }
+}
+
+// 渲染明細清單
+function renderList(bills){
+  const wrap = document.getElementById('billList');
+  if(bills.length ===0){
+    wrap.innerHTML = '<div style="padding:10px;text-align:center;">暫無收支記錄</div>';
+    return;
+  }
+  let html = '';
+  bills.reverse().forEach(item=>{
+    const sign = item.type === 'income' ? '+' : '-';
+    const color = item.type === 'income' ? '#36d399' : '#f87272';
+    html += `
+    <div class="list-item">
+      <div>
+        <div>${item.dateStr}｜${item.classify}｜${item.remark||'無備註'}</div>
+      </div>
+      <div style="color:${color};font-weight:bold;">${sign}$${item.money.toFixed(2)}</div>
+    </div>`;
+  });
+  wrap.innerHTML = html;
+}
+
+// 繪製統計圖表
+function renderChart(bills){
+  // 銷毀舊圖防止重疊卡頓
+  if(chartInstance) chartInstance.destroy();
+  let totalIncome = 0, totalPay =0;
+  bills.forEach(item=>{
+    if(item.type === 'income') totalIncome += item.money;
+    else totalPay += item.money;
+  });
+
+  const ctx = document.getElementById('myChart').getContext('2d');
+  // 深色模式圖表配色自動适配
+  const textColor = document.body.classList.contains('light-mode') ? '#111' : '#eee';
+  chartInstance = new Chart(ctx,{
+    type:'doughnut',
+    data:{
+      labels:['總收入','總支出'],
+      datasets:[{
+        data:[totalIncome,totalPay],
+        backgroundColor:['#36d399','#f87272']
+      }]
+    },
+    options:{
+      plugins:{
+        legend:{labels:{color:textColor}}
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
         <button data-tab="tab2">✏️ 記賬</button>
         <button data-tab="tab3">📋 記錄</button>
         <button data-tab="tab4">📈 圖表</button>
